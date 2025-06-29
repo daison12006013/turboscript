@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurboScript React App</title>
+    {{if and .Assets (index .Assets "styles.css")}}
+    <link href='{{index .Assets "styles.css"}}' rel="stylesheet">
+    {{else}}
+    <link href="/frontend/assets/styles.css" rel="stylesheet">
+    {{end}}
+    <script>
+        window.__ROUTE_DATA__ = {
+            route: "{{.Route}}",
+            data: JSON.parse('{{.Data}}')
+        };
+    </script>
+</head>
+
+<body>
+    <div id="root"></div>
+    {{if and .Assets (index .Assets "app.js")}}
+    <script src='{{index .Assets "app.js"}}'></script>
+    {{else}}
+    <script src="/frontend/assets/app.js"></script>
+    {{end}}
+</body>
+
+</html>

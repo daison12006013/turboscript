@@ -1,0 +1,868 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  GO_VERSION: "1.23.0"
+  POSTGRES_VERSION: "16"
+
+jobs:
+  # Job 1: Lint and Format Check
+  lint:
+    name: Lint and Format
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow workflow to continue even if this job fails
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install Node dependencies
+        run: |
+          # Fix any package-lock.json sync issues first
+          npm install --platform=linux --arch=x64
+          npm ci --platform=linux --arch=x64
+
+      - name: Go mod tidy check
+        run: |
+          go mod tidy
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "go mod tidy resulted in changes"
+            git diff
+            exit 1
+          fi
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.2.1
+          args: --timeout=5m
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: ESLint check
+        run: npm run lint:check
+
+      - name: Check Go documentation
+        run: |
+          # Check if main package has documentation
+          if ! grep -q "^// Package main" main.go; then
+            echo "Error: main.go missing package documentation"
+            exit 1
+          fi
+
+          # Check if internal packages have documentation
+          find internal -name "*.go" -path "*/internal/*" | head -5 | while read file; do
+            if ! grep -q "^// Package " "$file"; then
+              echo "Warning: $file missing package documentation"
+            fi
+          done
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 2: Unit Tests
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow workflow to continue even if this job fails
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run unit tests
+        run: |
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.out
+            coverage.html
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 3: Build Tests
+  build:
+    name: Build Tests
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow workflow to continue even if this job fails
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install Node dependencies
+        run: |
+          npm install --platform=linux --arch=x64
+          npm ci --platform=linux --arch=x64
+
+      - name: Test regular build
+        run: |
+          go build -o turboscript-test .
+          ./turboscript-test help
+
+      - name: Test distribution build
+        run: |
+          # Run comprehensive build tests using Go test
+          BUILD_TEST=true go test -v -run TestBuildDist ./...
+          echo "✅ Build tests passed!"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            !dist/app/node_modules/
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 4: End-to-End Tests
+  e2e:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow workflow to continue even if this job fails
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: turboscript_user
+          POSTGRES_PASSWORD: turboscript_pass
+          POSTGRES_DB: turboscript
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: |
+          npm install --platform=linux --arch=x64
+          npm ci --platform=linux --arch=x64
+
+      - name: Initialize database
+        run: |
+          PGPASSWORD=turboscript_pass psql -h localhost -U turboscript_user -d turboscript -f init.sql
+
+      - name: Build application
+        run: |
+          go build -o turboscript .
+
+      - name: Start TurboScript server
+        run: |
+          ./turboscript --config turboscript.dev.yml &
+          echo $! > server.pid
+
+          # Wait for server to start with proper health check
+          echo "🚀 Starting TurboScript server..."
+          for i in {1..30}; do
+            if curl -f http://localhost:7890/ > /dev/null 2>&1; then
+              echo "✅ Server is responding on port 7890"
+              break
+            fi
+            echo "⏳ Waiting for server to start (attempt $i/30)..."
+            sleep 2
+          done
+
+          # Final check if server is running
+          if ! ps -p $(cat server.pid) > /dev/null; then
+            echo "❌ Server process is not running"
+            cat turboscript.log || echo "No log file found"
+            exit 1
+          fi
+
+          # Final connectivity check
+          if ! curl -f http://localhost:7890/ > /dev/null 2>&1; then
+            echo "❌ Server is not responding to HTTP requests"
+            ps aux | grep turboscript
+            netstat -tlnp | grep 7890 || echo "Port 7890 not listening"
+            cat turboscript.log || echo "No log file found"
+            exit 1
+          fi
+
+          echo "✅ TurboScript server is ready"
+        env:
+          DB_USERNAME: turboscript_user
+          DB_PASSWORD: turboscript_pass
+          DB_NAME: turboscript
+
+      - name: Run Go-based E2E tests
+        run: |
+          echo "Running Go-based E2E tests..."
+          E2E_TEST=true go test -v -run TestE2EEndpoints ./...
+          echo "✅ All E2E tests passed!"
+
+      - name: Run Real-Time Communication Tests
+        run: |
+          echo "🔄 Running WebSocket multi-connection tests..."
+          node scripts/test-multi-websocket.js
+
+          echo "🔄 Running SSE multi-client tests..."
+          node scripts/test-sse-multi.js
+
+          echo "🧪 Running Go-based WebSocket multi-connection tests..."
+          E2E_TEST=true go test -v -run TestMultipleWebSocketConnections ./internal/tests/
+
+          echo "🧪 Running Go-based SSE multi-connection tests..."
+          E2E_TEST=true go test -v -run TestMultipleSSEConnections ./internal/tests/
+
+          echo "🧪 Running Go-based WebSocket message type tests..."
+          E2E_TEST=true go test -v -run TestWebSocketMessageTypes ./internal/tests/
+
+          echo "🧪 Running Go-based SSE connection flow tests..."
+          E2E_TEST=true go test -v -run TestSSEConnectionFlow ./internal/tests/
+
+          echo "✅ Real-time communication tests completed!"
+
+      - name: Run E2E benchmarks
+        run: |
+          echo "Running E2E performance benchmarks..."
+          E2E_TEST=true go test -v -bench=BenchmarkE2EEndpoints -benchmem ./...
+          echo "✅ E2E benchmarks completed!"
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+
+      - name: Upload E2E test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-artifacts
+          path: |
+            server.log
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 5: Postman Contract Tests
+  postman-contract:
+    name: Postman API Contract Tests
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow workflow to continue even if this job fails
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: turboscript_user
+          POSTGRES_PASSWORD: turboscript_pass
+          POSTGRES_DB: turboscript
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: |
+          npm install --platform=linux --arch=x64
+          npm ci --platform=linux --arch=x64
+
+      - name: Install Newman for Postman testing
+        run: |
+          npm install -g newman newman-reporter-html
+          newman --version
+
+      - name: Initialize database
+        run: |
+          PGPASSWORD=turboscript_pass psql -h localhost -U turboscript_user -d turboscript -f init.sql
+
+      - name: Build application
+        run: |
+          go build -o turboscript .
+
+      - name: Start TurboScript server
+        run: |
+          ./turboscript --config turboscript.dev.yml &
+          echo $! > server.pid
+
+          # Wait for server to start with proper health check
+          echo "🚀 Starting TurboScript server for Postman tests..."
+          for i in {1..30}; do
+            if curl -f http://localhost:7890/ > /dev/null 2>&1; then
+              echo "✅ Server is responding for Postman tests"
+              break
+            fi
+            echo "⏳ Waiting for server to start for Postman tests (attempt $i/30)..."
+            sleep 2
+          done
+
+          # Check if server is running
+          if ! ps -p $(cat server.pid) > /dev/null; then
+            echo "❌ Server process failed to start"
+            cat server.log || echo "No server log found"
+            exit 1
+          fi
+
+          # Verify server is responding
+          if ! curl -f http://localhost:7890/ > /dev/null 2>&1; then
+            echo "❌ Server is not responding to HTTP requests"
+            ps aux | grep turboscript
+            exit 1
+          fi
+
+          echo "✅ Server is running and responding for Postman tests"
+
+      - name: Run Postman contract tests
+        run: |
+          echo "🚀 Running Postman API contract tests..."
+
+          # Create reports directory
+          mkdir -p postman/reports
+
+          # Run Newman with detailed reporting
+          newman run postman/TurboScript-Complete-API.postman_collection.json \
+            --environment postman/TurboScript-Complete.postman_environment.json \
+            --reporters cli,html,json \
+            --reporter-html-export postman/reports/contract-report.html \
+            --reporter-json-export postman/reports/contract-report.json \
+            --env-var "base_url=http://localhost:7890" \
+            --timeout-request 30000 \
+            --timeout-script 60000 \
+            --bail
+
+          echo "✅ Postman contract tests completed successfully!"
+
+      - name: Upload Postman test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-contract-reports
+          path: |
+            postman/reports/
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+
+      - name: Display contract test summary
+        if: always()
+        run: |
+          if [ -f postman/reports/contract-report.json ]; then
+            echo "📊 Postman Contract Test Summary:"
+            echo "================================"
+            # Extract key metrics from JSON report
+            if command -v jq &> /dev/null; then
+              total_requests=$(jq '.run.stats.requests.total' postman/reports/contract-report.json)
+              failed_requests=$(jq '.run.stats.requests.failed' postman/reports/contract-report.json)
+              total_tests=$(jq '.run.stats.tests.total' postman/reports/contract-report.json)
+              failed_tests=$(jq '.run.stats.tests.failed' postman/reports/contract-report.json)
+
+              echo "Total Requests: $total_requests"
+              echo "Failed Requests: $failed_requests"
+              echo "Total Tests: $total_tests"
+              echo "Failed Tests: $failed_tests"
+              # Install bc if not available
+              which bc || (apt-get update && apt-get install -y bc)
+              echo "Success Rate: $(echo "scale=2; (($total_requests - $failed_requests) / $total_requests) * 100" | bc)%"
+            else
+              echo "jq not available, showing raw JSON summary"
+              grep -E '"total"|"failed"' postman/reports/contract-report.json | head -10
+            fi
+          fi
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 6: Security Scan
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow workflow to continue even if this job fails
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install and run Gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec ./...
+
+      - name: Run additional security checks
+        run: |
+          echo "Running additional security checks..."
+
+          # Check for potential SQL injection patterns
+          echo "Checking for SQL injection vulnerabilities..."
+          if grep -r "fmt.Sprintf.*SELECT\|fmt.Sprintf.*INSERT\|fmt.Sprintf.*UPDATE\|fmt.Sprintf.*DELETE" . --include="*.go"; then
+            echo "⚠️  Warning: Potential SQL injection vulnerability found"
+            echo "Consider using parameterized queries instead"
+          else
+            echo "✅ No SQL injection patterns detected"
+          fi
+
+          # Check for hardcoded secrets
+          echo "Checking for hardcoded secrets..."
+          if grep -r -i "password\s*=\s*[\"'][^\"']*[\"']\|secret\s*=\s*[\"'][^\"']*[\"']\|token\s*=\s*[\"'][^\"']*[\"']\|key\s*=\s*[\"'][^\"']*[\"']" . --include="*.go" --include="*.ts" --include="*.js" --exclude-dir=".git" --exclude-dir="node_modules"; then
+            echo "⚠️  Warning: Potential hardcoded secrets found"
+            echo "Consider using environment variables or secret management"
+          else
+            echo "✅ No hardcoded secrets detected"
+          fi
+
+          # Check for unsafe HTTP client usage
+          echo "Checking for unsafe HTTP client configurations..."
+          if grep -r "InsecureSkipVerify.*true\|TLSClientConfig.*InsecureSkipVerify" . --include="*.go"; then
+            echo "⚠️  Warning: Insecure TLS configuration found"
+            echo "Consider using proper certificate validation"
+          else
+            echo "✅ No insecure TLS configurations detected"
+          fi
+
+          # Check for unsafe file operations
+          echo "Checking for unsafe file operations..."
+          if grep -r "os\.Create\|os\.OpenFile\|ioutil\.WriteFile" . --include="*.go" | grep -v "test"; then
+            echo "⚠️  Warning: Direct file operations found"
+            echo "Ensure proper file permissions and path validation"
+          fi
+
+      - name: Nancy vulnerability scanner
+        run: |
+          echo "Installing Nancy vulnerability scanner..."
+          go install github.com/sonatype-nexus-community/nancy@latest
+
+          echo "Running Nancy vulnerability scan..."
+          go list -json -deps ./... | nancy sleuth || true
+
+      - name: Go vulnerability scanner
+        run: |
+          echo "Installing govulncheck..."
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
+          echo "Running govulncheck..."
+          govulncheck ./... || true
+
+      - name: Upload security scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: |
+            gosec.json
+        if: always()
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 7: Performance Tests
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow workflow to continue even if this job fails
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: turboscript_user
+          POSTGRES_PASSWORD: turboscript_pass
+          POSTGRES_DB: turboscript
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          npm install --platform=linux --arch=x64
+          npm ci --platform=linux --arch=x64
+          # Install hey for load testing
+          go install github.com/rakyll/hey@latest
+          # Install bc for calculations
+          which bc || (sudo apt-get update && sudo apt-get install -y bc)
+
+      - name: Initialize database
+        run: |
+          PGPASSWORD=turboscript_pass psql -h localhost -U turboscript_user -d turboscript -f init.sql
+
+      - name: Build and start server
+        run: |
+          go build -o turboscript .
+          ./turboscript &
+          echo $! > server.pid
+
+          # Wait for server with better health checking
+          echo "🚀 Starting TurboScript server for performance testing..."
+          for i in {1..30}; do
+            if curl -f http://localhost:7890/ > /dev/null 2>&1; then
+              echo "✅ Server is responding for performance tests"
+              break
+            fi
+            echo "⏳ Waiting for server to start for performance tests (attempt $i/30)..."
+            sleep 2
+          done
+
+          # Verify server is ready
+          if ! curl -f http://localhost:7890/ > /dev/null 2>&1; then
+            echo "❌ Performance test server is not responding"
+            exit 1
+          fi
+
+      - name: Run load tests
+        run: |
+          echo "Running load test on root endpoint..."
+          ~/go/bin/hey -n 30000 -c 1000 -t 30 http://localhost:7890/ > load_test_results.txt
+
+          echo "Load test results:"
+          cat load_test_results.txt
+
+          # Check if 95% of requests completed successfully
+          success_rate=$(grep "Success rate:" load_test_results.txt | awk '{print $3}' | sed 's/%//')
+          if [ $(echo "$success_rate < 95" | bc -l) -eq 1 ]; then
+            echo "Load test failed: Success rate is below 95%"
+            exit 1
+          fi
+
+      - name: Run Real-Time Communication Benchmarks
+        run: |
+          echo "🔄 Running WebSocket connection benchmarks..."
+          E2E_TEST=true go test -v -bench=BenchmarkWebSocketConnections -benchmem ./internal/tests/ > websocket_bench_results.txt
+
+          echo "🔄 Running SSE connection benchmarks..."
+          E2E_TEST=true go test -v -bench=BenchmarkSSEConnections -benchmem ./internal/tests/ > sse_bench_results.txt
+
+          echo "WebSocket Benchmark Results:"
+          cat websocket_bench_results.txt
+
+          echo "SSE Benchmark Results:"
+          cat sse_bench_results.txt
+
+          echo "✅ Real-time communication benchmarks completed!"
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+
+      - name: Upload performance test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-test-results
+          path: |
+            load_test_results.txt
+            websocket_bench_results.txt
+            sse_bench_results.txt
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 8: Docker Build Test
+  docker:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Allow workflow to continue even if this job fails
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test Docker build
+        run: |
+          docker build -f Dockerfile.dev -t turboscript:test .
+          echo "✅ Docker build successful!"
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 9: Summary Report
+  summary:
+    name: CI Summary Report
+    runs-on: ubuntu-latest
+    needs: [lint, test, build, e2e, postman-contract, security, performance, docker]
+    if: always()  # Always run this job, regardless of other job outcomes
+    steps:
+      - name: Generate Summary Report
+        run: |
+          echo "# 🚀 CI/CD Pipeline Summary Report" > summary.md
+          echo "## Job Status Overview" >> summary.md
+          echo "" >> summary.md
+
+          # Check each job status
+          echo "| Job | Status |" >> summary.md
+          echo "|-----|--------|" >> summary.md
+
+          # Lint job
+          if [ "${{ needs.lint.outputs.status }}" == "success" ]; then
+            echo "| 🔍 Lint and Format | ✅ Success |" >> summary.md
+          else
+            echo "| 🔍 Lint and Format | ❌ Failed |" >> summary.md
+          fi
+
+          # Test job
+          if [ "${{ needs.test.outputs.status }}" == "success" ]; then
+            echo "| 🧪 Unit Tests | ✅ Success |" >> summary.md
+          else
+            echo "| 🧪 Unit Tests | ❌ Failed |" >> summary.md
+          fi
+
+          # Build job
+          if [ "${{ needs.build.outputs.status }}" == "success" ]; then
+            echo "| 🏗️ Build Tests | ✅ Success |" >> summary.md
+          else
+            echo "| 🏗️ Build Tests | ❌ Failed |" >> summary.md
+          fi
+
+          # E2E job
+          if [ "${{ needs.e2e.outputs.status }}" == "success" ]; then
+            echo "| 🎯 End-to-End Tests | ✅ Success |" >> summary.md
+          else
+            echo "| 🎯 End-to-End Tests | ❌ Failed |" >> summary.md
+          fi
+
+          # Postman contract job
+          if [ "${{ needs.postman-contract.outputs.status }}" == "success" ]; then
+            echo "| 📄 Postman Contract Tests | ✅ Success |" >> summary.md
+          else
+            echo "| 📄 Postman Contract Tests | ❌ Failed |" >> summary.md
+          fi
+
+          # Security job
+          if [ "${{ needs.security.outputs.status }}" == "success" ]; then
+            echo "| 🔒 Security Scan | ✅ Success |" >> summary.md
+          else
+            echo "| 🔒 Security Scan | ❌ Failed |" >> summary.md
+          fi
+
+          # Performance job (only runs on main)
+          if [ "${{ needs.performance.outputs.status }}" == "success" ]; then
+            echo "| ⚡ Performance Tests | ✅ Success |" >> summary.md
+          elif [ "${{ needs.performance.outputs.status }}" == "failure" ]; then
+            echo "| ⚡ Performance Tests | ❌ Failed |" >> summary.md
+          elif [ "${{ needs.performance.result }}" == "skipped" ]; then
+            echo "| ⚡ Performance Tests | ⏭️ Skipped |" >> summary.md
+          fi
+
+          # Docker job
+          if [ "${{ needs.docker.outputs.status }}" == "success" ]; then
+            echo "| 🐳 Docker Build Test | ✅ Success |" >> summary.md
+          else
+            echo "| 🐳 Docker Build Test | ❌ Failed |" >> summary.md
+          fi
+
+          echo "" >> summary.md
+          echo "## 📊 Overall Status" >> summary.md
+
+          # Calculate overall success/failure counts
+          failed_jobs=0
+          total_jobs=0
+
+          for result in "${{ needs.lint.outputs.status }}" "${{ needs.test.outputs.status }}" "${{ needs.build.outputs.status }}" "${{ needs.e2e.outputs.status }}" "${{ needs.postman-contract.outputs.status }}" "${{ needs.security.outputs.status }}" "${{ needs.docker.outputs.status }}"; do
+            total_jobs=$((total_jobs + 1))
+            if [ "$result" != "success" ]; then
+              failed_jobs=$((failed_jobs + 1))
+            fi
+          done
+
+          # Add performance job to count if it ran
+          if [ "${{ needs.performance.result }}" != "skipped" ]; then
+            total_jobs=$((total_jobs + 1))
+            if [ "${{ needs.performance.outputs.status }}" != "success" ]; then
+              failed_jobs=$((failed_jobs + 1))
+            fi
+          fi
+
+          success_jobs=$((total_jobs - failed_jobs))
+
+          echo "- **Total Jobs**: $total_jobs" >> summary.md
+          echo "- **Successful**: $success_jobs" >> summary.md
+          echo "- **Failed**: $failed_jobs" >> summary.md
+
+          if [ $failed_jobs -eq 0 ]; then
+            echo "- **Overall Status**: 🎉 **ALL TESTS PASSED!**" >> summary.md
+          else
+            echo "- **Overall Status**: ⚠️ **$failed_jobs job(s) failed, but all issues are visible for review**" >> summary.md
+            exit 1
+          fi
+
+          echo "" >> summary.md
+          echo "## 💡 Next Steps" >> summary.md
+          echo "- Review failed jobs above" >> summary.md
+          echo "- Check individual job logs for detailed error information" >> summary.md
+          echo "- Download artifacts for failed jobs to investigate further" >> summary.md
+
+          # Display the summary
+          cat summary.md
+
+      - name: Upload Summary Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-summary-report
+          path: summary.md

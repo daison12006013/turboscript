@@ -1,0 +1,29 @@
+{
+  "name": "@turboscript/mysql2",
+  "version": "1.0.0",
+  "description": "MySQL client for goja JavaScript VM, compatible with Node.js mysql2 library",
+  "main": "index.go",
+  "types": "index.d.ts",
+  "keywords": [
+    "goja",
+    "mysql",
+    "mysql2",
+    "database",
+    "sql",
+    "client"
+  ],
+  "author": "TurboScript Project Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daison12006013/turboscript"
+  },
+  "engines": {
+    "goja": ">=1.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "go test -v"
+  }
+}

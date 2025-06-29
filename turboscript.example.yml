@@ -1,0 +1,186 @@
+# TurboScript Configuration Example
+# This file demonstrates all available configuration options
+
+# Server configuration
+port: 7890
+debug: true
+info: true
+warning: true
+monitoring: true
+timeout: 30 # Global timeout in seconds for async operations
+preserve_response: false
+prefer_ts: false # Prefer .ts files over .js files
+
+# Server-specific settings
+server:
+  pool_size: 10              # Executor pool size for concurrent request processing
+  profiler_port: "6060"      # Port for pprof profiler server
+  performance_interval: 30   # Performance metrics collection interval in seconds
+  http_timeout: 30           # HTTP client timeout in seconds for outbound requests
+  initial_cleanup_delay: 30  # Initial cleanup delay in seconds for job manager
+
+# Response compression configuration
+compression:
+  enabled: true
+  min_size: 1024 # Minimum response size in bytes to compress
+  level: 6       # Compression level 1-9 (1=fastest, 9=best, 6=balanced)
+
+# Database configuration with multiple connections
+database:
+  default: "main"
+  connections:
+    main:
+      driver: "postgres"
+      host: "${env:DB_HOST, localhost}"
+      port: ${env:DB_PORT, 5432}
+      username: "${env:DB_USERNAME, postgres}"
+      password: "${env:DB_PASSWORD, password}"
+      database: "${env:DB_NAME, turboscript}"
+      max_open_connections: 25
+      max_idle_connections: 10
+      connection_timeout: 30
+      max_lifetime: 3600
+      max_idle_time: 600
+      ssl_mode: "disable"
+      timezone: "UTC"
+
+# Cache configuration
+cache:
+  default: "memory"
+  drivers:
+    memory:
+      driver: "memory"
+      max_size: 128     # Maximum cache size in MB
+      expiration: 3600  # Default expiration time in seconds
+    redis:
+      driver: "redis"
+      host: "${env:REDIS_HOST, localhost}"
+      port: ${env:REDIS_PORT, 6379}
+      password: "${env:REDIS_PASSWORD}"
+      db: ${env:REDIS_DB, 0}
+      max_idle_connections: 10
+      max_active_connections: 100
+      idle_timeout: 300
+      read_timeout: 30
+      write_timeout: 30
+
+# Email configuration
+email:
+  default_driver: "smtp"
+  from_address: "noreply@example.com"
+  from_name: "TurboScript App"
+  smtp:
+    host: "${env:SMTP_HOST, localhost}"
+    port: ${env:SMTP_PORT, 587}
+    username: "${env:SMTP_USERNAME}"
+    password: "${env:SMTP_PASSWORD}"
+    encryption: "tls"
+
+# Background jobs configuration
+jobs:
+  enabled: true
+  max_workers: 10
+  retry_attempts: 3
+  retry_delay: 5
+  timeout: 30
+  queue_size: 1000
+  path: "./app/jobs"
+  data_retention:
+    jobs_days: 15
+    history_days: 15
+    auto_cleanup: true
+
+# Environment variables to inject into TypeScript execution context
+env:
+  APP_ENV: "development"
+  JWT_ACCESS_SECRET: "${env:JWT_ACCESS_SECRET, your-secret-key}"
+  JWT_REFRESH_SECRET: "${env:JWT_REFRESH_SECRET, your-refresh-secret}"
+
+# TypeScript Compiler Configuration
+typescript:
+  # External modules to exclude from bundling (keep as imports)
+  # These modules are provided by the runtime environment
+  external_modules:
+    - "bcryptjs"
+    - "crypto"
+    - "node:crypto"
+    - "node:url"
+    - "node:assert"
+    - "node:util"
+    - "fs"
+    - "path"
+    - "os"
+    - "argon2"           # Custom implementation provided by runtime
+    - "mongoose"         # If using MongoDB
+    - "pg"               # If using PostgreSQL driver directly
+  target: "ES2020"       # TypeScript compilation target
+  format: "CommonJS"     # Output format (CommonJS, ESM, IIFE)
+
+# API endpoints configuration
+endpoints:
+  # Standard API endpoint
+  - route: "/api/users"
+    method: "GET"
+    path: "./app/routes/users/index.ts"
+    type: "api"
+    timeout: 15 # Override global timeout for this specific endpoint
+
+  # WebSocket endpoint with custom configuration
+  - route: "/ws/chat"
+    method: "WebSocket"
+    path: "./app/websockets/chat.ts"
+    type: "websocket"
+    websocket:
+      read_buffer_size: 2048    # Custom buffer sizes
+      write_buffer_size: 2048
+      ping_interval: 30         # Ping interval in seconds
+      pong_timeout: 60          # Pong timeout in seconds
+      max_message_size: 1048576 # 1MB max message size
+      enable_compression: true
+      compression_level: 6
+      allowed_origins:
+        - "http://localhost:3000"
+        - "https://example.com"
+
+  # Server-Sent Events endpoint
+  - route: "/events"
+    method: "SSE"
+    path: "./app/routes/events.ts"
+    type: "sse"
+    sse:
+      enable_http2: true
+      keepalive_interval: 30 # Keep-alive interval in seconds
+      retry: 3000           # Retry interval in milliseconds
+      max_connections: 1000
+      buffer_size: 2048
+      enable_compression: true
+      allowed_origins:
+        - "http://localhost:3000"
+        - "https://example.com"
+
+  # Markdown to HTML folder endpoint
+  - route: "/docs/{path:.*}"
+    method: "GET"
+    path: "./app/docs"
+    type: "markdown-html"
+    options:
+      index: "index.md"
+      layout: "layout.html"
+
+# Plugin configurations
+plugins:
+  - name: "fileupload"
+    enabled: true
+    options:
+      max_file_size: 10485760 # 10MB
+      allowed_extensions:
+        - ".jpg"
+        - ".png"
+        - ".pdf"
+      storage_path: "./uploads"
+
+  - name: "broadcast"
+    enabled: true
+    options:
+      enable_kafka: false
+      enable_redis: false

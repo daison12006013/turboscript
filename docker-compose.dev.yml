@@ -1,0 +1,165 @@
+name: turboscript
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: turboscript
+      POSTGRES_USER: turboscript_user
+      POSTGRES_PASSWORD: turboscript_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U turboscript_user -d turboscript"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass turboscript_redis_pass
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  memcached:
+    image: memcached:1.6-alpine
+    ports:
+      - "11211:11211"
+    command: memcached -m 64 -u memcache -v
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "11211"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.1
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      # Fix for restart issues - allow Kafka to handle stale Zookeeper registrations
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 6000
+      KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS: 6000
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Ensure proper cleanup on shutdown
+      KAFKA_CONTROLLED_SHUTDOWN_ENABLE: true
+      KAFKA_CONTROLLED_SHUTDOWN_MAX_RETRIES: 3
+      KAFKA_CONTROLLED_SHUTDOWN_RETRY_BACKOFF_MS: 5000
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:29092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${PORT:-7890}:${PORT:-7890}"
+      - "6060:6060"
+    environment:
+      # Database configuration (used by turboscript.dev.yml)
+      - DB_HOST=postgres
+      - DB_USERNAME=turboscript_user
+      - DB_PASSWORD=turboscript_pass
+      - DB_NAME=turboscript
+      - PORT=${PORT:-7890}
+      # Cache configuration for testing
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=turboscript_redis_pass
+      - REDIS_DB=0
+      - MEMCACHED_HOST=memcached
+      - MEMCACHED_PORT=11211
+      - FILE_CACHE_ROOT=./cache
+      # MinIO configuration for testing
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      # Kafka configuration for testing
+      - KAFKA_BROKERS=kafka:29092
+      - KAFKA_WEBSOCKET_TOPIC=websocket-events
+      - KAFKA_SSE_TOPIC=sse-events
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      memcached:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/.bin  # Prevent overwriting the binary in container
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:

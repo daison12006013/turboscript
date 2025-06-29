@@ -1,0 +1,41 @@
+# .gitattributes - Configure what gets included in GitHub zip exports
+# Files and directories marked with export-ignore will be excluded from zip downloads
+
+# Development and build artifacts
+.tmp/ export-ignore
+.bin/ export-ignore
+dist/ export-ignore
+node_modules/ export-ignore
+.air.toml export-ignore
+
+# Development configuration files
+.env.example export-ignore
+.nvmrc export-ignore
+.vscode/ export-ignore
+.github/ export-ignore
+docker-compose.dev.yml export-ignore
+Dockerfile.dev export-ignore
+
+# Testing files
+*_test.go export-ignore
+build_test.go export-ignore
+integration_test.go export-ignore
+main_test.go export-ignore
+turboscript.test.yml export-ignore
+
+# Development scripts and tools
+scripts/ export-ignore
+golangci-lint export-ignore
+.golangci.yml export-ignore
+
+# Documentation (optional - uncomment if you want to exclude from exports)
+docs/ export-ignore
+CONTRIBUTING.md export-ignore
+ROADMAP.md export-ignore
+
+# Compiled binaries (these are built artifacts)
+turboscript export-ignore
+
+# Git configuration
+.gitignore export-ignore
+.gitattributes export-ignore

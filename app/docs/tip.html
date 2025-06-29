@@ -1,0 +1,324 @@
+<script>
+    // Pro Tips array with tips extracted from the documentation
+    const proTips = [
+        {
+            icon: "💡",
+            title: "Pro Tip",
+            content: "You can use both <code>@turboMarkdownHtml(\"file.md\")</code> and <code>@html(\"file.html\")</code> directives in your layout files! This powerful templating system allows you to create modular, maintainable documentation."
+        },
+        {
+            icon: "🚀",
+            title: "Performance Tip",
+            content: "Use <code>Promise.all()</code> with <code>turboQuery()</code> for parallel database operations. This can dramatically improve performance compared to sequential queries!"
+        },
+        {
+            icon: "🔒",
+            title: "Security Tip",
+            content: "Always use parameterized queries with <code>turboQuery()</code> to prevent SQL injection. Never concatenate user input directly into SQL strings."
+        },
+        {
+            icon: "⚡",
+            title: "Development Tip",
+            content: "Use <code>docker logs turboscript-app-dev-1 --tail=20</code> to quickly view your application logs during development."
+        },
+        {
+            icon: "🎯",
+            title: "Database Tip",
+            content: "Always use <code>LIMIT</code> clauses in your queries to prevent loading too much data. Consider implementing pagination for large datasets."
+        },
+        {
+            icon: "🔧",
+            title: "Development Tip",
+            content: "Run <code>./golangci-lint run</code> before committing Go code changes to ensure code quality and catch potential issues early."
+        },
+        {
+            icon: "📊",
+            title: "Performance Tip",
+            content: "Use cursor-based pagination instead of offset pagination for better performance with large datasets."
+        },
+        {
+            icon: "🛡️",
+            title: "Authentication Tip",
+            content: "Use the built-in <code>verifyAuth()</code> and <code>createAuthErrorResponse()</code> utilities for consistent JWT authentication across your endpoints."
+        },
+        {
+            icon: "⚙️",
+            title: "Configuration Tip",
+            content: "Enable debug mode in <code>turboscript.yml</code> during development for detailed logging and better troubleshooting."
+        },
+        {
+            icon: "📈",
+            title: "Optimization Tip",
+            content: "Select only the columns you need in your queries instead of using <code>SELECT *</code> to improve performance and reduce memory usage."
+        },
+        {
+            icon: "🔄",
+            title: "Async Tip",
+            content: "Always use async/await pattern with <code>turboQuery()</code> in your handle functions for optimal performance and error handling."
+        },
+        {
+            icon: "🚨",
+            title: "Error Handling Tip",
+            content: "Use structured error responses with appropriate HTTP status codes and meaningful error messages for better API usability."
+        },
+        {
+            icon: "💾",
+            title: "Database Tip",
+            content: "Implement proper indexing on frequently queried columns to significantly improve database performance."
+        },
+        {
+            icon: "🧪",
+            title: "Testing Tip",
+            content: "Use <code>make find-fail</code> to quickly identify failing tests and <code>make test</code> to run the full test suite."
+        },
+        {
+            icon: "🏗️",
+            title: "Build Tip",
+            content: "Use <code>make build-dist</code> to create optimized production distributions with compiled JavaScript and cross-platform binaries."
+        },
+        {
+            icon: "🔍",
+            title: "Debugging Tip",
+            content: "Add console logging in your TypeScript handlers and enable debug mode for comprehensive troubleshooting during development."
+        },
+        {
+            icon: "🌐",
+            title: "Production Tip",
+            content: "Configure proper CORS settings and rate limiting for production deployments to enhance security and performance."
+        },
+        {
+            icon: "📝",
+            title: "Validation Tip",
+            content: "Always validate input data in your handle functions before database operations to prevent errors and security issues."
+        },
+        {
+            icon: "🔐",
+            title: "Password Security Tip",
+            content: "Use the built-in password utilities with bcrypt for secure password hashing. Never store plain text passwords."
+        },
+        {
+            icon: "🌟",
+            title: "Architecture Tip",
+            content: "TurboScript's hybrid TypeScript/Go architecture provides the best of both worlds: JavaScript flexibility with Go performance."
+        },
+        {
+            icon: "📦",
+            title: "Deployment Tip",
+            content: "Use the generated <code>runner.sh</code> script for seamless production deployments with proper database configuration."
+        },
+        {
+            icon: "🔌",
+            title: "API Design Tip",
+            content: "Design RESTful endpoints with consistent naming conventions. Use plural nouns for collections and singular for specific resources."
+        },
+        {
+            icon: "🎪",
+            title: "Hot Reload Tip",
+            content: "TurboScript includes hot-reloading for Go code, so you don't need to manually restart the server during development!"
+        },
+        {
+            icon: "📚",
+            title: "Documentation Tip",
+            content: "Use the built-in markdown support to create rich, interactive documentation directly within your application."
+        },
+        {
+            icon: "🔥",
+            title: "Performance Tip",
+            content: "FastHTTP provides superior performance compared to standard HTTP libraries. TurboScript leverages this for maximum throughput."
+        },
+        {
+            icon: "🎛️",
+            title: "Configuration Tip",
+            content: "Use environment variables in your <code>turboscript.yml</code> for different deployment environments (dev, staging, prod)."
+        },
+        {
+            icon: "🧩",
+            title: "Modularity Tip",
+            content: "Organize your utilities in the <code>app/utils/</code> directory for better code reusability across different routes."
+        },
+        {
+            icon: "🎭",
+            title: "TypeScript Tip",
+            content: "Leverage the global type definitions in <code>app/global.d.ts</code> for better IntelliSense and type safety."
+        },
+        {
+            icon: "📡",
+            title: "Network Tip",
+            content: "Always run TurboScript on port 7890 for development to maintain consistency across team environments."
+        },
+        {
+            icon: "🎨",
+            title: "Frontend Tip",
+            content: "Combine TurboScript's backend power with modern frontend frameworks for full-stack applications."
+        },
+        {
+            icon: "🔬",
+            title: "Testing Strategy Tip",
+            content: "Create comprehensive test suites with both unit tests for utilities and integration tests for API endpoints."
+        },
+        {
+            icon: "🌊",
+            title: "Scalability Tip",
+            content: "Design your database schema with proper normalization and consider read replicas for high-traffic applications."
+        },
+        {
+            icon: "🎯",
+            title: "Efficiency Tip",
+            content: "Use connection pooling and prepared statements for optimal database performance in high-load scenarios."
+        },
+        {
+            icon: "🔄",
+            title: "CI/CD Tip",
+            content: "Integrate linting checks and tests into your CI/CD pipeline to maintain code quality automatically."
+        },
+        {
+            icon: "🎪",
+            title: "Development Workflow Tip",
+            content: "Use the <code>scripts/</code> directory for custom build and deployment scripts to streamline your workflow."
+        },
+        {
+            icon: "🚀",
+            title: "Production Optimization Tip",
+            content: "Enable Go's built-in race detector during testing: <code>go test -race ./...</code> to catch concurrency issues."
+        },
+        {
+            icon: "🧠",
+            title: "Memory Management Tip",
+            content: "Monitor memory usage with Go's built-in profiling tools and optimize query result handling for large datasets."
+        },
+        {
+            icon: "🔐",
+            title: "JWT Security Tip",
+            content: "Set appropriate expiration times for JWT tokens and implement refresh token rotation for enhanced security."
+        }
+    ];
+
+    let currentTipIndex = 0;
+    let typewriterTimeout;
+    let isTyping = false;
+
+    // Function to get a random tip
+    function getRandomTip() {
+        const randomIndex = Math.floor(Math.random() * proTips.length);
+        currentTipIndex = randomIndex;
+        return proTips[randomIndex];
+    }
+
+    // Function to create typewriter effect
+    function typeWriter(element, text, speed = 30) {
+        return new Promise((resolve) => {
+            element.innerHTML = '';
+            let i = 0;
+            let currentText = '';
+
+            function type() {
+                if (i < text.length) {
+                    const char = text.charAt(i);
+                    currentText += char;
+
+                    // Handle HTML tags by adding them all at once
+                    if (char === '<') {
+                        const closingTagIndex = text.indexOf('>', i);
+                        if (closingTagIndex !== -1) {
+                            currentText = currentText.slice(0, -1) + text.substring(i, closingTagIndex + 1);
+                            i = closingTagIndex;
+                        }
+                    }
+
+                    element.innerHTML = currentText + '<span class="typing-cursor">|</span>';
+                    i++;
+                    typewriterTimeout = setTimeout(type, speed);
+                } else {
+                    // Remove cursor after typing is complete
+                    element.innerHTML = currentText;
+                    resolve();
+                }
+            }
+            type();
+        });
+    }
+
+    // Function to render the tip with typewriter effect
+    async function renderRandomTip() {
+        if (isTyping) return;
+
+        isTyping = true;
+        const tip = getRandomTip();
+        const alertDiv = document.querySelector('.alert');
+
+        if (alertDiv) {
+            // Clear any existing timeout
+            if (typewriterTimeout) {
+                clearTimeout(typewriterTimeout);
+            }
+
+            // Set the title immediately
+            const titleElement = alertDiv.querySelector('h4');
+            const contentElement = alertDiv.querySelector('p');
+
+            if (titleElement && contentElement) {
+                titleElement.textContent = `${tip.icon} ${tip.title}`;
+                await typeWriter(contentElement, tip.content, 25);
+            } else {
+                alertDiv.innerHTML = `
+                    <h4>${tip.icon} ${tip.title}</h4>
+                    <p></p>
+                `;
+                const newContentElement = alertDiv.querySelector('p');
+                await typeWriter(newContentElement, tip.content, 25);
+            }
+        }
+
+        isTyping = false;
+    }
+
+    // Function to change to next tip
+    function nextTip() {
+        if (!isTyping) {
+            renderRandomTip();
+        }
+    }
+
+    // Initialize random tip when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function () {
+        renderRandomTip();
+    });
+
+    // Change tip every 15 seconds (increased time to account for typing animation)
+    setInterval(nextTip, 15000);
+</script>
+
+<style>
+    .typing-cursor {
+        animation: blink 1s infinite;
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    @keyframes blink {
+
+        0%,
+        50% {
+            opacity: 1;
+        }
+
+        51%,
+        100% {
+            opacity: 0;
+        }
+    }
+
+    .alert {
+        transition: all 0.3s ease;
+    }
+
+    .alert:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<div class="alert">
+    <h4>💡 Pro Tip</h4>
+    <p>Loading amazing tips...</p>
+</div>

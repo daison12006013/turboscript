@@ -1,0 +1,45 @@
+root = "."
+testdata_dir = "testdata"
+tmp_dir = ".tmp"
+
+[build]
+  args_bin = ["-config", "turboscript.dev.yml"]
+  bin = "./.tmp/main"
+  # Only build Go binary - frontend runs in watch mode separately
+  cmd = "go build -o ./.tmp/main ."
+  delay = 1000
+  exclude_dir = ["node_modules", "postman", "dist", "tmp", "vendor", "testdata", ".tmp", "cache", "app/frontend/assets"]
+  exclude_file = ["*.log", "*_test.go"]
+  exclude_regex = ["_test\\.go$"]
+  exclude_unchanged = false
+  follow_symlink = false
+  full_bin = ""
+  include_dir = [".", "internal", "app", "turbo_modules"]
+  include_ext = ["go", "yml", "yaml", "ts", "js", "json", "html", "css", "md"]
+  include_file = []
+  kill_delay = "0s"
+  log = "build-errors.log"
+  poll = false
+  poll_interval = 0
+  rerun = false
+  rerun_delay = 500
+  send_interrupt = false
+  stop_on_root = false
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  time = false
+
+[misc]
+  clean_on_exit = false
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true

@@ -1,0 +1,11 @@
+# Self-Hosted GitHub Actions Runner
+# Environment file containing secrets
+.env
+
+# Runner workspace and logs
+_work/
+*.log
+
+# Docker volumes
+postgres-ci-data/
+github-runner-workspace/

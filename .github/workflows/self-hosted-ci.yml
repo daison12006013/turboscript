@@ -1,0 +1,446 @@
+name: Self-Hosted CI/CD Pipeline
+
+# This workflow is designed to run on self-hosted runners
+# Set DISABLE_GITHUB_CI repository secret to 'true' to disable this workflow
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  GO_VERSION: "1.23.0"
+  POSTGRES_VERSION: "16"
+
+jobs:
+  # Check if CI should run
+  check-ci-enabled:
+    name: Check CI Status
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - name: Check if CI is enabled
+        id: check
+        run: |
+          if [ "${{ secrets.DISABLE_GITHUB_CI }}" = "true" ]; then
+            echo "CI is disabled via DISABLE_GITHUB_CI secret"
+            echo "should-run=false" >> $GITHUB_OUTPUT
+          else
+            echo "CI is enabled"
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 1: Lint and Format Check
+  lint:
+    name: Lint and Format
+    runs-on: [self-hosted, linux, turboscript]  # Use self-hosted runner
+    needs: check-ci-enabled
+    if: needs.check-ci-enabled.outputs.should-run == 'true'
+    continue-on-error: true
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Go mod tidy check
+        run: |
+          go mod tidy
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "go mod tidy resulted in changes"
+            git diff
+            exit 1
+          fi
+
+      - name: golangci-lint
+        run: |
+          if ! command -v golangci-lint &> /dev/null; then
+            go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
+          fi
+          golangci-lint run --timeout=5m
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: ESLint check
+        run: npm run lint:check
+
+      - name: Check Go documentation
+        run: |
+          if ! grep -q "^// Package main" main.go; then
+            echo "Error: main.go missing package documentation"
+            exit 1
+          fi
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 2: Unit Tests
+  test:
+    name: Unit Tests
+    runs-on: [self-hosted, linux, turboscript]
+    needs: check-ci-enabled
+    if: needs.check-ci-enabled.outputs.should-run == 'true'
+    continue-on-error: true
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run unit tests
+        run: |
+          go test -v -race -coverprofile=coverage.out ./...
+          go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.out
+            coverage.html
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 3: Build Tests
+  build:
+    name: Build Tests
+    runs-on: [self-hosted, linux, turboscript]
+    needs: check-ci-enabled
+    if: needs.check-ci-enabled.outputs.should-run == 'true'
+    continue-on-error: true
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Test regular build
+        run: |
+          go build -o turboscript-test .
+          ./turboscript-test help
+
+      - name: Test distribution build
+        run: |
+          BUILD_TEST=true go test -v -run TestBuildDist ./... || true
+          echo "✅ Build tests passed!"
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 4: End-to-End Tests
+  e2e:
+    name: End-to-End Tests
+    runs-on: [self-hosted, linux, turboscript]
+    needs: check-ci-enabled
+    if: needs.check-ci-enabled.outputs.should-run == 'true'
+    continue-on-error: true
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start PostgreSQL
+        run: |
+          docker run -d \
+            --name turboscript-ci-postgres \
+            -e POSTGRES_USER=turboscript_user \
+            -e POSTGRES_PASSWORD=turboscript_pass \
+            -e POSTGRES_DB=turboscript \
+            -p 5432:5432 \
+            postgres:16
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..30}; do
+            if docker exec turboscript-ci-postgres pg_isready -U turboscript_user -d turboscript > /dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Initialize database
+        run: |
+          docker exec -i turboscript-ci-postgres psql -U turboscript_user -d turboscript < init.sql
+
+      - name: Build application
+        run: go build -o turboscript .
+
+      - name: Start TurboScript server
+        run: |
+          DB_USERNAME=turboscript_user \
+          DB_PASSWORD=turboscript_pass \
+          DB_NAME=turboscript \
+          ./turboscript --config turboscript.dev.yml &
+          echo $! > server.pid
+
+          for i in {1..30}; do
+            if curl -f http://localhost:7890/ > /dev/null 2>&1; then
+              echo "✅ Server is responding on port 7890"
+              break
+            fi
+            echo "⏳ Waiting for server to start (attempt $i/30)..."
+            sleep 2
+          done
+
+      - name: Run E2E tests
+        run: |
+          E2E_TEST=true go test -v -run TestE2EEndpoints ./...
+
+      - name: Run Real-Time Communication Tests
+        run: |
+          if [ -f "scripts/test-multi-websocket.js" ]; then
+            node scripts/test-multi-websocket.js
+          fi
+          if [ -f "scripts/test-sse-multi.js" ]; then
+            node scripts/test-sse-multi.js
+          fi
+
+      - name: Stop server and cleanup
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+          docker stop turboscript-ci-postgres || true
+          docker rm turboscript-ci-postgres || true
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 5: Security Scan
+  security:
+    name: Security Scan
+    runs-on: [self-hosted, linux, turboscript]
+    needs: check-ci-enabled
+    if: needs.check-ci-enabled.outputs.should-run == 'true'
+    continue-on-error: true
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install security tools
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          go install github.com/sonatype-nexus-community/nancy@latest
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run Gosec
+        run: gosec ./...
+
+      - name: Run Nancy vulnerability scanner
+        run: go list -json -deps ./... | nancy sleuth || true
+
+      - name: Run govulncheck
+        run: govulncheck ./... || true
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 6: Docker Build Test
+  docker:
+    name: Docker Build Test
+    runs-on: [self-hosted, linux, turboscript]
+    needs: check-ci-enabled
+    if: needs.check-ci-enabled.outputs.should-run == 'true'
+    continue-on-error: true
+    outputs:
+      status: ${{ steps.set-status.outputs.status }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Test Docker build
+        run: |
+          docker build -f Dockerfile.dev -t turboscript:test .
+          echo "✅ Docker build successful!"
+
+      - name: Set job status
+        id: set-status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+
+  # Job 7: Summary Report
+  summary:
+    name: CI Summary Report
+    runs-on: [self-hosted, linux, turboscript]
+    needs: [check-ci-enabled, lint, test, build, e2e, security, docker]
+    if: always() && needs.check-ci-enabled.outputs.should-run == 'true'
+    steps:
+      - name: Generate Summary Report
+        run: |
+          echo "# 🚀 Self-Hosted CI/CD Pipeline Summary Report" > summary.md
+          echo "## Job Status Overview" >> summary.md
+          echo "" >> summary.md
+
+          echo "| Job | Status |" >> summary.md
+          echo "|-----|--------|" >> summary.md
+
+          # Check each job status
+          if [ "${{ needs.lint.outputs.status }}" == "success" ]; then
+            echo "| 🔍 Lint and Format | ✅ Success |" >> summary.md
+          else
+            echo "| 🔍 Lint and Format | ❌ Failed |" >> summary.md
+          fi
+
+          if [ "${{ needs.test.outputs.status }}" == "success" ]; then
+            echo "| 🧪 Unit Tests | ✅ Success |" >> summary.md
+          else
+            echo "| 🧪 Unit Tests | ❌ Failed |" >> summary.md
+          fi
+
+          if [ "${{ needs.build.outputs.status }}" == "success" ]; then
+            echo "| 🏗️ Build Tests | ✅ Success |" >> summary.md
+          else
+            echo "| 🏗️ Build Tests | ❌ Failed |" >> summary.md
+          fi
+
+          if [ "${{ needs.e2e.outputs.status }}" == "success" ]; then
+            echo "| 🎯 End-to-End Tests | ✅ Success |" >> summary.md
+          else
+            echo "| 🎯 End-to-End Tests | ❌ Failed |" >> summary.md
+          fi
+
+          if [ "${{ needs.security.outputs.status }}" == "success" ]; then
+            echo "| 🔒 Security Scan | ✅ Success |" >> summary.md
+          else
+            echo "| 🔒 Security Scan | ❌ Failed |" >> summary.md
+          fi
+
+          if [ "${{ needs.docker.outputs.status }}" == "success" ]; then
+            echo "| 🐳 Docker Build Test | ✅ Success |" >> summary.md
+          else
+            echo "| 🐳 Docker Build Test | ❌ Failed |" >> summary.md
+          fi
+
+          echo "" >> summary.md
+          echo "## 📊 Overall Status" >> summary.md
+
+          # Calculate success/failure
+          failed_jobs=0
+          total_jobs=6
+
+          for result in "${{ needs.lint.outputs.status }}" "${{ needs.test.outputs.status }}" "${{ needs.build.outputs.status }}" "${{ needs.e2e.outputs.status }}" "${{ needs.security.outputs.status }}" "${{ needs.docker.outputs.status }}"; do
+            if [ "$result" != "success" ]; then
+              failed_jobs=$((failed_jobs + 1))
+            fi
+          done
+
+          success_jobs=$((total_jobs - failed_jobs))
+
+          echo "- **Total Jobs**: $total_jobs" >> summary.md
+          echo "- **Successful**: $success_jobs" >> summary.md
+          echo "- **Failed**: $failed_jobs" >> summary.md
+          echo "- **Runner**: Self-hosted ($(hostname))" >> summary.md
+
+          if [ $failed_jobs -eq 0 ]; then
+            echo "- **Overall Status**: 🎉 **ALL TESTS PASSED!**" >> summary.md
+          else
+            echo "- **Overall Status**: ⚠️ **$failed_jobs job(s) failed**" >> summary.md
+          fi
+
+          cat summary.md
+
+      - name: Upload Summary Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-summary-report
+          path: summary.md

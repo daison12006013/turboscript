@@ -1,0 +1,51 @@
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "typescript-lit-html-plugin"
+      }
+    ],
+    "target": "ES2020",
+    "module": "CommonJS",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+    "noFallthroughCasesInSwitch": true,
+    "jsx": "react-jsx",
+    "typeRoots": ["./node_modules/@types", "./turbo_modules/"],
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["app/*"]
+    }
+  },
+  "include": [
+    "app/**/*",
+    "internal/**/*",
+    "scripts/**/*",
+    "turbo_modules/**/*.d.ts",
+    "*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts"
+  ],
+  "files": [
+    "app/global.d.ts",
+    "turbo_modules/argon2/index.d.ts",
+    "turbo_modules/mysql2/index.d.ts",
+    "turbo_modules/pg/index.d.ts"
+  ]
+}

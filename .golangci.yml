@@ -1,0 +1,47 @@
+# golangci-lint configuration for TurboScript
+# https://golangci-lint.run/usage/configuration/
+
+# Configuration file format version
+version: "2"
+
+run:
+  timeout: 5m
+  issues-exit-code: 1
+  tests: false
+
+linters:
+  enable:
+    # Default linters
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+    # Additional quality linters
+    - bodyclose
+    - contextcheck
+    - dupl
+    - errname
+    - errorlint
+    - exhaustive
+    # - funlen
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - gosec
+    - misspell
+    - nakedret
+    - nestif
+    - prealloc
+    - revive
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

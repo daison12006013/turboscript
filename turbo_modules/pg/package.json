@@ -1,0 +1,29 @@
+{
+  "name": "@turboscript/pg",
+  "version": "1.0.0",
+  "description": "PostgreSQL client for goja JavaScript VM, compatible with Node.js pg library",
+  "main": "index.go",
+  "types": "index.d.ts",
+  "keywords": [
+    "goja",
+    "postgresql",
+    "pg",
+    "database",
+    "sql",
+    "client"
+  ],
+  "author": "TurboScript Project Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daison12006013/turboscript"
+  },
+  "engines": {
+    "goja": ">=1.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "go test -v"
+  }
+}

@@ -1,0 +1,61 @@
+# ignore md files in .github
+.github/*.md
+
+.plans/
+.cache/
+
+# Binaries
+.bin/
+bin/
+dist/
+.tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+turboscript-test
+coverage.out
+coverage.html
+*gosec.json
+
+# Log files
+logs.txt
+*/logs.txt
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+
+# Docker
+.dockerignore
+
+# Logs
+*.log
+
+# Node modules
+node_modules/
+
+# Build files
+main
+turboscript
+golangci-lint
+
+# Postman reports
+postman/reports/

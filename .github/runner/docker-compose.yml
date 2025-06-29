@@ -1,0 +1,79 @@
+services:
+  # Self-hosted GitHub Actions runner
+  github-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: turboscript-github-runner
+    environment:
+      # Required: Set these environment variables
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-daison12006013/turboscript}
+
+      # Optional: Customize runner configuration
+      - RUNNER_NAME=${RUNNER_NAME:-turboscript-docker-runner}
+      - RUNNER_LABELS=${RUNNER_LABELS:-self-hosted,linux,docker,turboscript,local}
+      - RUNNER_GROUP=${RUNNER_GROUP:-default}
+
+      # CI Environment variables
+      - GO_VERSION=1.23.0
+      - POSTGRES_VERSION=16
+      - NODE_ENV=test
+      - CI=true
+
+    volumes:
+      # Mount Docker socket for Docker-in-Docker operations
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # Mount workspace for persistent storage
+      - github-runner-workspace:/home/runner/_work
+
+      # Optional: Mount local repository for development
+      # - ${PWD}:/home/runner/_work/turboscript/turboscript
+
+    restart: unless-stopped
+
+    # Ensure Docker socket access
+    user: "1001:999"  # runner:docker group
+
+    networks:
+      - runner-network
+
+    # Health check to ensure runner is responsive
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "Runner.Listener"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL for CI testing (optional - only if needed for local CI runs)
+  postgres-ci:
+    image: postgres:16
+    container_name: turboscript-postgres-ci
+    environment:
+      POSTGRES_USER: turboscript_user
+      POSTGRES_PASSWORD: turboscript_pass
+      POSTGRES_DB: turboscript
+    volumes:
+      - postgres-ci-data:/var/lib/postgresql/data
+      - ${PWD}/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    networks:
+      - runner-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U turboscript_user -d turboscript"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  github-runner-workspace:
+    driver: local
+  postgres-ci-data:
+    driver: local
+
+networks:
+  runner-network:
+    driver: bridge

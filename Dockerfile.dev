@@ -1,0 +1,47 @@
+FROM golang:1.23-alpine
+
+WORKDIR /app
+
+# Install air for hot reloading (compatible with Go 1.23)
+RUN go install github.com/air-verse/air@v1.61.5
+
+# Install Node.js/npm + UPDATE npm to latest
+RUN apk --no-cache add nodejs npm bash && \
+    npm install -g npm@latest  # Critical fix
+
+# Install Node.js and npm for frontend builds, and bash for scripts
+RUN apk --no-cache add nodejs npm bash
+
+# Upgrade apk packages to reduce vulnerabilities
+RUN apk --no-cache upgrade && apk --no-cache add --upgrade ca-certificates
+
+# Copy go mod and sum files first for better layer caching
+COPY go.mod go.sum ./
+
+# Copy turbo_modules directory needed for local module replacements
+COPY turbo_modules/ ./turbo_modules/
+
+# Download Go dependencies (now that local modules are available)
+RUN go mod download
+
+# Copy package.json and package-lock.json for npm install
+COPY package*.json ./
+
+# Install npm dependencies with correct platform binaries
+RUN npm install
+
+# Copy source code (excluding node_modules via .dockerignore)
+COPY . .
+
+# Make scripts executable
+RUN chmod +x scripts/dev-watch.sh
+
+# Set Docker environment indicator for automatic config selection
+ENV DOCKER_ENV=true
+
+# Expose port (configurable via PORT env var, defaults to 7890)
+EXPOSE ${PORT:-7890}
+EXPOSE 6060
+
+# Use bash to run our custom development watch script that runs frontend and backend in parallel
+CMD ["bash", "scripts/dev-watch.sh"]

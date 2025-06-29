@@ -1,0 +1,34 @@
+{
+  "name": "@turboscript/argon2",
+  "version": "1.0.0",
+  "description": "Argon2 password hashing library for goja (Go JavaScript VM)",
+  "main": "index.go",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daison12006013/turboscript",
+    "directory": "turbo_modules/argon2"
+  },
+  "keywords": [
+    "goja",
+    "argon2",
+    "password",
+    "hashing",
+    "security",
+    "go",
+    "javascript"
+  ],
+  "author": "TurboScript Contributors",
+  "license": "Apache-2.0",
+  "goja": {
+    "module": true,
+    "exports": {
+      "hash": "Argon2Hash",
+      "verify": "Argon2Verify",
+      "hashSync": "Argon2HashSync",
+      "verifySync": "Argon2VerifySync"
+    }
+  },
+  "dependencies": {
+    "golang.org/x/crypto": "^0.0.0"
+  }
+}

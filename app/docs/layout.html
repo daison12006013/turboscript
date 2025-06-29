@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'docs-dark': {
+                            '50': '#f8fafc',
+                            '100': '#f1f5f9',
+                            '200': '#e2e8f0',
+                            '300': '#cbd5e1',
+                            '400': '#94a3b8',
+                            '500': '#64748b',
+                            '600': '#475569',
+                            '700': '#334155',
+                            '800': '#1e293b',
+                            '900': '#0f172a',
+                            '950': '#020617'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Smooth transitions */
+        * {
+            transition: all 0.2s ease;
+        }
+
+        /* Custom link styles */
+        .sidebar-nav a {
+            color: #94a3b8;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: normal;
+            display: block;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            text-align: left;
+        }
+
+        .sidebar-nav a:hover {
+            color: white;
+            background-color: #1e293b;
+        }
+
+        .sidebar-nav a.active {
+            color: white;
+            background-color: #1e293b;
+            box-shadow: inset 0 0 0 2px #ef4444;
+        }
+
+        /* Sidebar section headers - make them clearly distinct from links */
+        .sidebar-nav h1,
+        .sidebar-nav h2,
+        .sidebar-nav h3,
+        .sidebar-nav h4,
+        .sidebar-nav h5,
+        .sidebar-nav h6 {
+            color: white;
+            font-weight: bold;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            padding: 0 1rem;
+            text-align: left;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            border-bottom: 1px solid #374151;
+            padding-bottom: 0.5rem;
+        }
+
+        /* First header shouldn't have top margin */
+        .sidebar-nav h1:first-child,
+        .sidebar-nav h2:first-child,
+        .sidebar-nav h3:first-child,
+        .sidebar-nav h4:first-child,
+        .sidebar-nav h5:first-child,
+        .sidebar-nav h6:first-child {
+            margin-top: 0;
+        }
+
+        /* Nested navigation */
+        .sidebar-nav ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar-nav ul>li {
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-nav li {
+            list-style: none;
+        }
+
+        /* Sub-navigation indentation */
+        .sidebar-nav ul ul a {
+            font-size: 0.75rem;
+            text-align: left;
+            padding-left: 2rem;
+            padding-right: 1rem;
+        }
+
+        /* Navigation dividers */
+        .sidebar-nav hr {
+            border-color: #334155;
+            margin: 1.5rem 0;
+        }
+
+        /* Paragraphs in sidebar (if any) */
+        .sidebar-nav p {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            padding: 0 1rem;
+            margin-bottom: 0.5rem;
+            text-align: left;
+        }
+
+        /* Code highlighting */
+        .prose code {
+            /* background-color: #f9fafb; */
+            /* color: #374151; */
+
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+            border: 1px solid #d1d5db;
+        }
+
+        .prose pre {
+            /* background-color: #f9fafb; */
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            padding: 1.25rem 1.5rem;
+            margin: 2rem 0;
+            max-width: 100% !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        }
+
+        .prose pre code {
+            /* background-color: transparent !important; */
+            /* color: #1e293b !important; */
+            padding: 0 !important;
+            display: block;
+            line-height: 1.625;
+            font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.875rem;
+            white-space: pre !important;
+            border: none !important;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Improve prose spacing and containment */
+        .prose {
+            max-width: none;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Ensure header styles take precedence */
+        .prose h1 {
+            font-size: 1.5rem !important;
+            /* 24px */
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            margin-top: 2.5rem;
+            line-height: 1.3 !important;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .prose h2 {
+            font-size: 1.25rem !important;
+            /* 20px */
+            font-weight: 600;
+            color: #f3f4f6;
+            margin-bottom: 1.25rem;
+            margin-top: 2rem;
+            line-height: 1.4 !important;
+            margin: 1.25rem 0 0.25rem !important;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .prose h3 {
+            font-size: 1.125rem !important;
+            /* 18px */
+            font-weight: 500;
+            color: #e5e7eb;
+            margin-bottom: 1rem;
+            margin-top: 1.5rem;
+            line-height: 1.4 !important;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .prose h4 {
+            font-size: 1rem !important;
+            /* 16px */
+            font-weight: 500;
+            color: #e5e7eb;
+            margin-bottom: 0.75rem;
+            margin-top: 1.25rem;
+            line-height: 1.5 !important;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .prose h5 {
+            font-size: 0.875rem !important;
+            /* 14px */
+            font-weight: 500;
+            color: #e5e7eb;
+            margin-bottom: 0.75rem;
+            margin-top: 1.25rem;
+            line-height: 1.5 !important;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .prose h6 {
+            font-size: 0.75rem !important;
+            /* 12px */
+            font-weight: 500;
+            color: #e5e7eb;
+            margin-bottom: 0.75rem;
+            margin-top: 1.25rem;
+            line-height: 1.5 !important;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        /* Header hover effects */
+        .prose h1:hover,
+        .prose h2:hover,
+        .prose h3:hover,
+        .prose h4:hover,
+        .prose h5:hover,
+        .prose h6:hover {
+            opacity: 0.8;
+        }
+
+        /* Add hash prefix to clickable headers */
+        .prose h1::before,
+        .prose h2::before,
+        .prose h3::before,
+        .prose h4::before,
+        .prose h5::before,
+        .prose h6::before {
+            content: '#';
+            color: rgb(239 68 68 / var(--tw-text-opacity, 1));
+            margin-right: 0.5rem;
+            font-weight: normal;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+
+        .prose h1:hover::before,
+        .prose h2:hover::before,
+        .prose h3:hover::before,
+        .prose h4:hover::before,
+        .prose h5:hover::before,
+        .prose h6:hover::before {
+            opacity: 1;
+        }
+
+        .prose p {
+            color: #9ca3af;
+            line-height: 1.625;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            font-size: 1rem !important;
+            /* 16px */
+        }
+
+        .prose ul,
+        .prose ol {
+            color: #9ca3af;
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+        }
+
+        .prose li {
+            margin-bottom: 0.5rem;
+            line-height: 1.625;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .prose blockquote {
+            border-left: 4px solid #dc2626;
+            padding-left: 1rem;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+            background-color: #111827;
+            color: #e5e7eb;
+            font-style: italic;
+        }
+
+        .prose a {
+            color: #f87171;
+            transition-property: color;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+            text-decoration: underline;
+            word-wrap: break-word;
+        }
+
+        .prose a:hover {
+            color: #fca5a5;
+        }
+
+        .prose table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #374151;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .prose th {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            font-weight: 600;
+            padding: 0.75rem;
+            border: 1px solid #374151;
+        }
+
+        .prose td {
+            color: #9ca3af;
+            padding: 0.75rem;
+            border: 1px solid #374151;
+        }
+
+        /* Content container to prevent overflow */
+        .content-container {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .content-wrapper {
+            word-break: break-word;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            min-width: 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+        }
+
+        /* Alert styles */
+        .alert {
+            background: linear-gradient(to right, rgba(127, 29, 29, 0.2), rgba(154, 52, 18, 0.2));
+            border: 1px solid rgba(153, 27, 27, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert h4 {
+            color: #f87171;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .alert p {
+            color: #9ca3af;
+            font-size: 0.875rem;
+            line-height: 1.625;
+        }
+
+        .alert code {
+            background-color: #1f2937;
+            color: #f87171;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/prism-themes@1.9.0/themes/prism-coldark-cold.min.css" rel="stylesheet" />
+    <title>{{title}} - TurboScript Documentation</title>
+</head>
+
+<body class="bg-docs-dark-950 text-docs-dark-100 font-sans antialiased">
+    <!-- Navigation Header -->
+    <nav class="bg-docs-dark-900 border-b border-docs-dark-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/">
+                        <div class="flex-shrink-0 flex items-center">
+                            <span class="text-2xl font-bold text-white">Turbo</span>
+                            <span class="text-2xl font-bold text-red-500">Script</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="mobile-menu-btn" class="lg:hidden text-docs-dark-300 hover:text-white p-2 rounded-md transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <a href="https://github.com/daison12006013/turboscript" class="text-docs-dark-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="min-h-screen">
+        <!-- Main Container -->
+        <div class="flex">
+            <!-- Sidebar -->
+            <aside class="sidebar w-64 bg-docs-dark-900 border-r border-docs-dark-800 transition-transform duration-300 ease-in-out lg:translate-x-0 -translate-x-full fixed lg:relative z-30 h-screen lg:h-auto overflow-y-auto">
+                <div class="py-6">
+                    <!-- Sidebar Header -->
+                    <!-- <div class="mb-8 px-4 text-center">
+                        <div class="flex items-center justify-center">
+                            <span class="text-xl font-bold text-white">Turbo</span>
+                            <span class="text-xl font-bold text-red-500">Script</span>
+                        </div>
+                        <p class="text-docs-dark-400 text-sm mt-1">Documentation</p>
+                    </div> -->
+                    <!-- Sidebar Navigation -->
+                    <nav class="sidebar-nav">
+                        @turboMarkdownHtml("sidebar.md")
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <div class="flex-1 min-w-0">
+                <!-- Content Header -->
+                <header class="bg-gradient-to-r from-docs-dark-900 to-docs-dark-800 border-b border-docs-dark-700">
+                    <div class="max-w-6xl mx-auto px-6 lg:px-8 py-8">
+                        <h1 class="text-3xl font-bold text-white mb-2">{{title}}</h1>
+                        <!-- <p class="text-docs-dark-300 text-lg">A hybrid web framework combining TypeScript and Go</p> -->
+                    </div>
+                </header>
+
+                <!-- Alert/Tip Section -->
+                <div class="max-w-6xl mx-auto px-6 lg:px-8 pt-6">
+                    @turboHtml("tip.html")
+                </div>
+
+                <!-- Documentation Content -->
+                <article class="max-w-6xl mx-auto px-6 lg:px-8">
+                    <div class="prose prose-invert prose-red content-wrapper max-w-4xl">
+                        {{content}}
+                    </div>
+                </article>
+
+                <!-- Footer -->
+                <footer class="border-t border-docs-dark-800 mt-16">
+                    <div class="max-w-6xl mx-auto px-6 lg:px-8 py-8">
+                        <div class="flex flex-col sm:flex-row items-center justify-between text-sm text-docs-dark-400 space-y-4 sm:space-y-0">
+                            <div>
+                                <p>&copy; 2025 TurboScript. All rights reserved.</p>
+                            </div>
+                            <div class="flex items-center space-x-6">
+                                <a href="/docs" class="hover:text-docs-dark-200 transition-colors">Documentation</a>
+                                <a href="/docs/api" class="hover:text-docs-dark-200 transition-colors">API Reference</a>
+                                <a href="https://github.com/daison12006013/turboscript" class="hover:text-docs-dark-200 transition-colors" target="_blank" rel="noopener noreferrer">GitHub</a>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile menu overlay -->
+    <div class="fixed inset-0 z-40 lg:hidden hidden" id="mobile-menu-overlay">
+        <div class="fixed inset-0 bg-black opacity-50"></div>
+        <div class="fixed inset-y-0 left-0 w-64 bg-docs-dark-900 z-50 overflow-y-auto">
+            <div class="py-6">
+                <!-- Mobile Sidebar Header -->
+                <div class="mb-8 px-4 flex items-center justify-between">
+                    <div class="text-center flex-1">
+                        <div class="flex items-center justify-center">
+                            <span class="text-xl font-bold text-white">Turbo</span>
+                            <span class="text-xl font-bold text-red-500">Script</span>
+                        </div>
+                        <p class="text-docs-dark-400 text-sm mt-1">Documentation</p>
+                    </div>
+                    <button id="mobile-menu-close" class="text-docs-dark-300 hover:text-white p-2 rounded-md transition-colors ml-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <!-- Mobile Sidebar Navigation -->
+                <nav class="sidebar-nav">
+                    @turboMarkdownHtml("sidebar.md")
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-docker.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-nginx.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-textile.min.js"></script>
+    <script>
+        // Add active class to current page link
+        document.addEventListener('DOMContentLoaded', function () {
+            const currentPath = window.location.pathname;
+            const links = document.querySelectorAll('.sidebar-nav a');
+
+            links.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+
+            // Handle link targets: external links open in new tab, internal links stay in same tab
+            function handleLinkTargets() {
+                const allLinks = document.querySelectorAll('a');
+
+                allLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+
+                    if (href) {
+                        // Check if it's an external link
+                        if (href.startsWith('http://') || href.startsWith('https://')) {
+                            // External link - open in new tab
+                            link.setAttribute('target', '_blank');
+                            link.setAttribute('rel', 'noopener noreferrer');
+                        } else if (href.startsWith('mailto:') || href.startsWith('tel:')) {
+                            // Email and phone links - keep default behavior
+                            // Do nothing
+                        } else {
+                            // Internal/relative link - ensure it opens in same tab
+                            link.removeAttribute('target');
+                        }
+                    }
+                });
+            }
+
+            // Apply link target handling
+            handleLinkTargets();
+
+            // Header hash functionality
+            function generateId(text) {
+                return text
+                    .toLowerCase()
+                    .replace(/[^\w\s-]/g, '') // Remove special characters
+                    .replace(/\s+/g, '-')     // Replace spaces with hyphens
+                    .replace(/-+/g, '-')      // Replace multiple hyphens with single
+                    .trim();
+            }
+
+            // Add IDs and click handlers to headers
+            const headers = document.querySelectorAll('.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6');
+
+            headers.forEach(header => {
+                const id = generateId(header.textContent);
+                header.id = id;
+
+                header.addEventListener('click', function () {
+                    // Update URL hash
+                    history.pushState(null, null, '#' + id);
+
+                    // Optional: smooth scroll to header (in case it's not perfectly in view)
+                    header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            });
+
+            // Handle initial hash on page load
+            if (window.location.hash) {
+                const targetId = window.location.hash.substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    setTimeout(() => {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                }
+            }
+
+            // Mobile menu functionality
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenuClose = document.getElementById('mobile-menu-close');
+            const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+            const sidebar = document.querySelector('.sidebar');
+
+            function openMobileMenu() {
+                if (mobileMenuOverlay) {
+                    mobileMenuOverlay.classList.remove('hidden');
+                    document.body.classList.add('overflow-hidden');
+                }
+                if (sidebar) {
+                    sidebar.classList.add('mobile-open');
+                }
+            }
+
+            function closeMobileMenu() {
+                if (mobileMenuOverlay) {
+                    mobileMenuOverlay.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+                if (sidebar) {
+                    sidebar.classList.remove('mobile-open');
+                }
+            }
+
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', openMobileMenu);
+            }
+
+            if (mobileMenuClose) {
+                mobileMenuClose.addEventListener('click', closeMobileMenu);
+            }
+
+            if (mobileMenuOverlay) {
+                // Close mobile menu when clicking overlay background
+                mobileMenuOverlay.addEventListener('click', function (e) {
+                    if (e.target === mobileMenuOverlay || e.target.classList.contains('bg-black')) {
+                        closeMobileMenu();
+                    }
+                });
+
+                // Close mobile menu when clicking a navigation link
+                document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                    link.addEventListener('click', closeMobileMenu);
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

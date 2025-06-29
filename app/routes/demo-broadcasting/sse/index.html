@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurboScript SSE Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .events-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: #f8f9fa;
+        }
+
+        .event {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #3498db;
+            background-color: white;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .input-group {
+            margin: 10px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .info-box {
+            background-color: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🌊 TurboScript SSE Demo</h1>
+
+        <div class="info-box">
+            <h3>How to use SSE (Server-Sent Events)</h3>
+            <p>SSE allows the server to push real-time updates to your browser. It's perfect for live notifications, real-time dashboards, or chat applications.</p>
+            <p><strong>Try this:</strong> Open multiple tabs to see broadcasting in action!</p>
+        </div>
+
+        <div id="status" class="status disconnected">Disconnected</div>
+
+        <div class="controls">
+            <button id="connectBtn" class="btn-primary">Connect to SSE</button>
+            <button id="disconnectBtn" class="btn-danger" disabled>Disconnect</button>
+            <button id="clearEventsBtn" class="btn-warning">Clear Events</button>
+            <button id="sendBroadcastBtn" class="btn-success">Send Broadcast</button>
+        </div>
+
+        <div class="input-group">
+            <label for="userIdInput">User ID:</label>
+            <input type="text" id="userIdInput" placeholder="Your unique ID">
+        </div>
+
+        <div class="input-group">
+            <label for="broadcastMessage">Broadcast Message:</label>
+            <textarea id="broadcastMessage" placeholder="Message to send to all connected clients">Hello from SSE!</textarea>
+        </div>
+
+        <h2>📡 Real-time Events (Events: <span id="eventCount">0</span>)</h2>
+        <div id="eventsContainer" class="events-container">
+            <p>No events yet. Click "Connect to SSE" to start receiving updates.</p>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let eventCount = 0;
+
+        /* Generate random user ID */
+        document.getElementById('userIdInput').value = 'user_' + Math.random().toString(36).substr(2, 8);
+
+        function connectSSE() {
+            const userId = document.getElementById('userIdInput').value || 'anonymous';
+            const url = '/demo-broadcasting/sse/simple?user_id=' + encodeURIComponent(userId) + '&channel=general';
+
+            console.log('Connecting to SSE:', url);
+            eventSource = new EventSource(url);
+
+            eventSource.onopen = function () {
+                updateStatus('Connected', 'connected');
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+            };
+
+            eventSource.onerror = function () {
+                updateStatus('Error/Reconnecting', 'disconnected');
+            };
+
+            /* Listen for all event types */
+            ['connected', 'welcome', 'time_update', 'test_message', 'message'].forEach(function (eventType) {
+                eventSource.addEventListener(eventType, function (event) {
+                    addEvent(eventType, event.data);
+                });
+            });
+        }
+
+        function disconnectSSE() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            updateStatus('Disconnected', 'disconnected');
+            document.getElementById('connectBtn').disabled = false;
+            document.getElementById('disconnectBtn').disabled = true;
+        }
+
+        function updateStatus(text, className) {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.className = 'status ' + className;
+        }
+
+        function addEvent(type, data) {
+            eventCount++;
+            document.getElementById('eventCount').textContent = eventCount;
+
+            const container = document.getElementById('eventsContainer');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event';
+
+            let parsedData = data;
+            try {
+                parsedData = JSON.stringify(JSON.parse(data), null, 2);
+            } catch (e) {
+                /* Not JSON */
+            }
+
+            eventDiv.innerHTML = '<strong>' + type + '</strong> (' + new Date().toLocaleTimeString() + ')' +
+                '<pre style="margin: 5px 0; background: #f0f0f0; padding: 5px; border-radius: 3px;">' +
+                parsedData + '</pre>';
+
+            container.insertBefore(eventDiv, container.firstChild);
+
+            /* Keep only last 20 events */
+            while (container.children.length > 20) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function clearEvents() {
+            document.getElementById('eventsContainer').innerHTML = '<p>Events cleared.</p>';
+            eventCount = 0;
+            document.getElementById('eventCount').textContent = '0';
+        }
+
+        async function sendBroadcast() {
+            const message = document.getElementById('broadcastMessage').value.trim();
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+
+            try {
+                const response = await fetch('/demo-broadcasting/sse/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        event: 'test_message',
+                        data: {
+                            message: message,
+                            sender: document.getElementById('userIdInput').value,
+                            timestamp: new Date().toISOString()
+                        },
+                        broadcast: true
+                    })
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('Broadcast sent! Notified ' + (result.data.connections_notified || 0) + ' connections.');
+                } else {
+                    alert('Broadcast failed: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        /* Event listeners */
+        document.getElementById('connectBtn').onclick = connectSSE;
+        document.getElementById('disconnectBtn').onclick = disconnectSSE;
+        document.getElementById('clearEventsBtn').onclick = clearEvents;
+        document.getElementById('sendBroadcastBtn').onclick = sendBroadcast;
+
+        /* Auto-connect */
+        setTimeout(connectSSE, 500);
+    </script>
+</body>
+
+</html>

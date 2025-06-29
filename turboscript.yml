@@ -1,0 +1,352 @@
+# Logging Configuration
+debug: false
+info: true
+warning: true
+monitoring: false
+
+# Log file configuration
+log_file: "turboscript.log"
+
+# Response configuration
+# preserve_response: false uses Go's JSON marshaling (faster, but may reorder fields)
+# preserve_response: true preserves JSON field order as defined in TypeScript handle() functions
+# Drawbacks of enabling preserve_response:
+#   - Slightly slower performance due to bypassing Go's JSON optimization
+#   - Uses more memory as raw JSON strings are kept without Go struct optimization
+#   - May cause issues with some JSON processing libraries that expect standardized field order
+preserve_response: false
+
+# Server configuration
+port: 7890
+
+# Response compression configuration
+# Gzip compression reduces bandwidth usage and improves response times
+# Benefits: 70-90% size reduction for text content, faster loading, lower bandwidth costs
+# Drawbacks: Small CPU overhead (1-5%), minimal memory increase
+compression:
+  enabled: true        # Enable/disable gzip compression
+  min_size: 1024      # Minimum response size in bytes to compress (1KB)
+  level: 6            # Compression level (1=fastest, 9=best compression, 6=balanced)
+
+# Timeout configuration (in seconds)
+# Global timeout for all async operations (database queries, etc.)
+# Individual endpoints can override this with their own timeout setting
+timeout: 30
+
+# Custom 404 page configuration
+# When set, the server will use this TypeScript handler for 404 responses instead of the default JSON response
+# The handler should export a handle() function that returns a TurboScriptResponse
+not_found_page: ./app/routes/404
+
+# Environment variables
+env:
+  APP_ENV: "production"
+  APP_URL: "http://localhost:7890"
+  APP_SECRET: "turboscript-app-secret-change-in-production"
+  JWT_ACCESS_SECRET: "turboscript-access-secret-change-in-production"
+  JWT_REFRESH_SECRET: "turboscript-refresh-secret-change-in-production"
+
+cache:
+  default: "memory-local"
+
+  drivers:
+    memory-local:
+      driver: "memory"
+      max_size: 100 # Maximum size in MB
+      expiration: 3600 # Default expiration time in seconds
+
+    redis-server:
+      driver: "redis"
+      host: ${env:REDIS_HOST, "localhost"}
+      port: ${env:REDIS_PORT, 6379}
+      password: ${env:REDIS_PASSWORD, ""}
+      db: ${env:REDIS_DB, 0}
+      max_idle_connections: 10
+      max_active_connections: 50
+      idle_timeout: 300 # seconds
+      read_timeout: 30 # seconds
+      write_timeout: 30 # seconds
+
+    memcached-server:
+      driver: "memcached"
+      host: ${env:MEMCACHED_HOST, "localhost"}
+      port: ${env:MEMCACHED_PORT, 11211}
+      max_idle_connections: 10
+      max_active_connections: 50
+      idle_timeout: 300 # seconds
+      read_timeout: 30 # seconds
+      write_timeout: 30 # seconds
+
+    file-system:
+      driver: "file"
+      root: ${env:FILE_CACHE_ROOT, "./.cache"}
+      max_size: 10 # Maximum size in MB
+
+database:
+  default: "main"
+
+  connections:
+    main:
+      driver: "postgres"
+      host: ${env:DB_HOST, "localhost"}
+      port: 5432
+      username: ${env:DB_USERNAME, "turboscript_user"}
+      password: ${env:DB_PASSWORD, "turboscript_pass"}
+      database: ${env:DB_NAME, "turboscript"}
+      max_open_connections: 25
+      max_idle_connections: 10
+      connection_timeout: 30 # seconds
+      max_lifetime: 300 # seconds
+      max_idle_time: 60 # seconds
+      ssl_mode: ${env:DB_SSL_MODE,"disable"} # disable, require, verify-ca, verify-full
+      timezone: "UTC" # Database timezone, e.g: "UTC", "America/New_York"
+
+    # Example: Read-only connection for reporting
+    # readonly:
+    #   driver: "postgres"
+    #   host: ${env:DB_READONLY_HOST,"localhost"}
+    #   port: 5432
+    #   username: ${env:DB_READONLY_USERNAME,"readonly_user"}
+    #   password: ${env:DB_READONLY_PASSWORD,"readonly_pass"}
+    #   database: ${env:DB_NAME,"turboscript"}
+    #   max_open_connections: 5
+    #   max_idle_connections: 2
+    #   connection_timeout: 30
+    #   max_lifetime: 300
+    #   max_idle_time: 60
+    #   ssl_mode: ${env:DB_SSL_MODE,"require"}
+    #   timezone: "UTC"
+
+# Email configuration
+email:
+  default_driver: "smtp"
+  from_address: "noreply@turboscript.com"
+  from_name: "TurboScript"
+
+  # SMTP Configuration
+  smtp:
+    host: "localhost"
+    port: 587
+    username: ""
+    password: ""
+    encryption: "tls" # none, tls, ssl
+
+  # Mailgun Configuration
+  mailgun:
+    domain: "your-domain.mailgun.org"
+    api_key: "your-mailgun-api-key"
+    region: "us" # us, eu
+
+  # AWS SES Configuration
+  ses:
+    region: "us-east-1"
+    access_key_id: "your-aws-access-key"
+    secret_access_key: "your-aws-secret-key"
+
+  # SendGrid Configuration
+  sendgrid:
+    api_key: "your-sendgrid-api-key"
+
+  # Postmark Configuration
+  postmark:
+    server_token: "your-postmark-server-token"
+
+# Background Jobs Configuration
+jobs:
+  enabled: true
+  max_workers: 5
+  retry_attempts: 3
+  retry_delay: 5 # seconds
+  timeout: 30 # seconds
+  queue_size: 1000
+  path: ./app/jobs
+  data_retention:
+    jobs_days: 30          # Number of days to keep completed, failed, or cancelled jobs
+    history_days: 30       # Number of days to keep job history entries
+    auto_cleanup: true     # Whether to automatically run cleanup
+
+# TypeScript Compiler Configuration
+typescript:
+  # External modules to exclude from bundling (keep as imports)
+  # These modules are provided by the runtime environment or as native implementations
+  external_modules:
+    - "bcryptjs"
+    - "crypto"
+    - "node:crypto"
+    - "node:url"
+    - "node:assert"
+    - "node:util"
+    - "fs"
+    - "path"
+    - "os"
+    - "argon2"  # Custom turboArgon2 implementation provided by runtime
+  target: "ES2020"          # TypeScript compilation target (ES2015, ES2016, ES2017, ES2018, ES2019, ES2020, ES2021, ES2022)
+  format: "CommonJS"        # Output format (CommonJS, ESM, IIFE)
+
+# Plugin Configuration
+plugins:
+  - name: fileupload
+    enabled: true
+    options:
+      # Storage type: "local", "s3", or "minio"
+      storage_type: "local"
+
+      # Local storage configuration
+      upload_dir: "./uploads"
+      max_file_size: 10485760  # 10MB in bytes
+      allowed_types:
+        - "image/jpeg"
+        - "image/png"
+        - "image/gif"
+        - "image/webp"
+        - "application/pdf"
+        - "text/plain"
+
+      # S3/MinIO configuration (uncomment and configure when using S3/MinIO)
+      # s3:
+      #   endpoint: "localhost:9000"  # For MinIO, use S3 endpoint for AWS
+      #   access_key_id: "minioadmin"
+      #   secret_access_key: "minioadmin"
+      #   bucket_name: "turboscript-uploads"
+      #   region: "us-east-1"
+      #   use_ssl: false  # Set to true for production
+      #   base_url: "http://localhost:9000/turboscript-uploads"  # Optional custom URL
+
+endpoints:
+  - route: /
+    method: GET
+    path: ./app/routes/index
+
+  - route: /users
+    method: POST
+    path: ./app/routes/users/create
+
+  - route: /auth/login
+    method: POST
+    path: ./app/routes/auth/login
+
+  - route: /auth/refresh
+    method: POST
+    path: ./app/routes/auth/refresh
+
+  - route: /users
+    method: GET
+    path: ./app/routes/users/paginated
+
+  - route: /users/{uid}
+    method: GET
+    path: ./app/routes/users/filter-by-uid
+
+  - route: /users/verify/{confirmationToken}
+    method: GET
+    path: ./app/routes/users/verify
+
+  - route: /users/change-password
+    method: POST
+    path: ./app/routes/users/change-password
+    timeout: 5  # Custom 5-second timeout for this endpoint
+
+  - route: /auth/logout
+    method: POST
+    path: ./app/routes/auth/logout
+
+  - route: /demo/*
+    method: GET
+    path: ./app/routes/demo/*
+
+  - route: /docs{file:(?:/.*)?}
+    method: GET
+    path: ./app/docs
+    type: "markdown-html"
+    options:
+      index: "index.md"
+      layout: "layout.html"
+
+  - route: /frontend/*
+    method: GET
+    path: ./app/frontend
+    type: "hybrid"
+    options:
+      app: "App.html"
+      data: "data"
+      assets: "assets"
+      cache_control:
+        # Cache settings for different asset types
+        static_assets:
+          development: "no-cache, no-store, must-revalidate"  # Disable caching in dev
+          production: "public, max-age=31536000"              # 1 year cache in prod
+        html_pages:
+          development: "no-cache, no-store, must-revalidate"  # Disable caching in dev
+          production: "public, max-age=300"                   # 5 minutes cache in prod
+        # Enable asset versioning with hash query parameters for cache busting
+        asset_versioning: true  # Adds ?v=hash to asset URLs
+        # Configurable assets for versioning - specify which files to version
+        versioned_assets:
+          - "app.js"
+          - "styles.css"
+          # Add more assets as needed for your project
+
+  - route: /frontend/data/settings/update
+    method: PUT
+    path: ./app/frontend/data/settings/update
+
+  # WebSocket broadcast endpoint for testing
+  - route: /demo-broadcasting/websocket/broadcast
+    method: POST
+    path: ./app/routes/demo-broadcasting/websocket/broadcast
+
+  # Demo SSE routes
+  - route: /demo-broadcasting/sse/simple
+    method: SSE
+    type: sse
+    path: ./app/routes/demo-broadcasting/sse/simple
+    sse:
+      enable_http2: true
+      keepalive_interval: 30
+      retry: 3000
+      max_connections: 100
+      buffer_size: 2048
+      enable_compression: true
+
+  # Demo UI for SSE
+  - route: /demo-broadcasting/sse/events
+    method: GET
+    path: ./app/routes/demo-broadcasting/sse/events
+
+  - route: /demo-broadcasting/sse/broadcast
+    method: POST
+    path: ./app/routes/demo-broadcasting/sse/broadcast
+
+  - route: /demo-broadcasting/sse
+    method: GET
+    path: ./app/routes/demo-broadcasting/sse/index
+
+  # WebSocket endpoint with channel-based configuration
+  - route: /ws
+    method: WebSocket
+    type: websocket
+    websocket:
+      enable_presence: true
+      enable_redis: true
+      enable_kafka: false
+      redis_channel: "turboscript_ws"
+      ping_interval: 30
+      pong_timeout: 60
+      max_message_size: 524288  # 512KB
+      enable_compression: true
+      compression_level: 6
+      channels:
+        - room: "public-(.*)"      # Regex pattern for public rooms
+          type: "public"
+          handle: ./app/websockets/public
+          max_connections: 0       # Unlimited connections
+
+        - room: "room-(.*)"        # Regex pattern for private rooms
+          type: "private"
+          handle: ./app/websockets/private-room
+          max_connections: 10      # Maximum 10 connections per room
+
+        - room: "presence-(.*)"    # Regex pattern for presence channels
+          type: "presence"
+          handle: ./app/websockets/presence
+          max_connections: 500     # Maximum 500 connections per presence channel

@@ -1,0 +1,763 @@
+{
+	"info": {
+		"_postman_id": "turboscript-complete-contract",
+		"name": "TurboScript Complete Contract",
+		"description": "Complete API contract testing for TurboScript framework with user lifecycle and authentication flow",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "turboscript"
+	},
+	"item": [
+		{
+			"name": "Setup",
+			"item": [
+				{
+					"name": "Initialize Variables",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Generate a unique email for this test run",
+									"const randomSuffix = Math.random().toString(36).substring(2, 8);",
+									"const testEmail = `test.user.${randomSuffix}@turboscript.test`;",
+									"",
+									"// Store in collection variables for reuse across all requests",
+									"pm.collectionVariables.set('testEmail', testEmail);",
+									"pm.collectionVariables.set('testName', `Test User ${randomSuffix.toUpperCase()}`);",
+									"pm.collectionVariables.set('testPassword', 'MyComplexP@ssw0rd2024!');",
+									"pm.collectionVariables.set('baseUrl', 'http://127.0.0.1:7890');",
+									"",
+									"console.log(`Generated test email: ${testEmail}`);",
+									"console.log(`Generated test name: Test User ${randomSuffix.toUpperCase()}`);",
+									"",
+									"// Clear any existing auth tokens",
+									"pm.collectionVariables.unset('accessToken');",
+									"pm.collectionVariables.unset('refreshToken');",
+									"pm.collectionVariables.unset('userUid');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Initialize test variables and check if the server is running"
+					},
+					"response": []
+				}
+			],
+			"description": "Setup collection variables and test environment"
+		},
+		{
+			"name": "1. Root Endpoint",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response has correct structure', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('status');",
+							"    pm.expect(responseJson.status).to.eql('success');",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						""
+					]
+				},
+				"description": "Test the root endpoint to verify server connectivity"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Create User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test('User created successfully', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('status');",
+							"    pm.expect(responseJson.status).to.eql('success');",
+							"    pm.expect(responseJson).to.have.property('data');",
+							"    pm.expect(responseJson.data).to.have.property('uid');",
+							"    ",
+							"    // Store user UID for later use",
+							"    pm.collectionVariables.set('userUid', responseJson.data.uid);",
+							"    console.log(`Created user with UID: ${responseJson.data.uid}`);",
+							"});",
+							"",
+							"pm.test('User data matches input', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.data.name).to.eql(pm.collectionVariables.get('testName'));",
+							"    pm.expect(responseJson.data.email).to.eql(pm.collectionVariables.get('testEmail'));",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"{{testName}}\",\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"{{testPassword}}\",\n    \"confirm_password\": \"{{testPassword}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/users",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					]
+				},
+				"description": "Create a new user with generated email and password"
+			},
+			"response": []
+		},
+		{
+			"name": "3. User Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",					"pm.test('Login successful', function () {",
+					"    const responseJson = pm.response.json();",
+					"    pm.expect(responseJson).to.have.property('status');",
+					"    pm.expect(responseJson.status).to.eql('success');",
+					"    pm.expect(responseJson).to.have.property('data');",
+					"    pm.expect(responseJson.data).to.have.property('access_token');",
+					"    pm.expect(responseJson.data).to.have.property('refresh_token');",
+					"    ",
+					"    // Store tokens for authenticated requests",
+					"    pm.collectionVariables.set('accessToken', responseJson.data.access_token);",
+					"    pm.collectionVariables.set('refreshToken', responseJson.data.refresh_token);",
+					"    ",
+					"    console.log('Login successful, tokens stored');",
+					"});",
+							"",
+							"pm.test('User data is returned', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.data.email).to.eql(pm.collectionVariables.get('testEmail'));",
+							"    pm.expect(responseJson.data).to.have.property('uid');",
+							"    pm.expect(responseJson.data).to.have.property('name');",
+							"});",
+							"",
+							"pm.test('Token expiration dates are provided', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.data).to.have.property('access_token_expires_at');",
+							"    pm.expect(responseJson.data).to.have.property('refresh_token_expires_at');",
+							"});",
+							"",
+							"pm.test('Password rehash indicator is present', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.data).to.have.property('password_needs_rehash');",
+							"    pm.expect(typeof responseJson.data.password_needs_rehash).to.eql('boolean');",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"{{testPassword}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				},
+				"description": "Login with the created user credentials to obtain access and refresh tokens"
+			},
+			"response": []
+		},
+		{
+			"name": "4. Refresh Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Token refresh successful', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('status');",
+							"    pm.expect(responseJson.status).to.eql('success');",
+							"    pm.expect(responseJson).to.have.property('data');",
+							"    pm.expect(responseJson.data).to.have.property('access_token');",
+							"    pm.expect(responseJson.data).to.have.property('refresh_token');",
+							"    pm.expect(responseJson.data).to.have.property('access_token_expires_at');",
+							"    pm.expect(responseJson.data).to.have.property('refresh_token_expires_at');",
+							"    ",
+							"    // Update tokens with new ones (rotating refresh token pattern)",
+							"    pm.collectionVariables.set('accessToken', responseJson.data.access_token);",
+							"    pm.collectionVariables.set('refreshToken', responseJson.data.refresh_token);",
+							"    ",
+							"    console.log('Token refresh successful, new token pair stored');",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"refresh_token\": \"{{refreshToken}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/refresh",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"refresh"
+					]
+				},
+				"description": "Refresh the access token using the refresh token"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Get Paginated Users (Authenticated)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Users list retrieved successfully', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('status');",
+							"    pm.expect(responseJson.status).to.eql('success');",
+							"    pm.expect(responseJson).to.have.property('data');",
+							"    pm.expect(responseJson.meta).to.have.property('pagination');",
+							"});",
+							"",
+							"pm.test('Pagination metadata is present', function () {",
+							"    const responseJson = pm.response.json();",
+							"    const pagination = responseJson.meta.pagination;",
+							"    pm.expect(pagination).to.have.property('page');",
+							"    pm.expect(pagination).to.have.property('limit');",
+							"    pm.expect(pagination).to.have.property('total_count');",
+							"    pm.expect(pagination).to.have.property('total_pages');",
+							"});",
+							"",
+							"pm.test('Created user is in the list', function () {",
+							"    const responseJson = pm.response.json();",
+							"    const users = responseJson.data;",
+							"    const testEmail = pm.collectionVariables.get('testEmail');",
+							"    const createdUser = users.find(user => user.email === testEmail);",
+							"    pm.expect(createdUser).to.not.be.undefined;",
+							"    console.log(`Found created user in paginated list: ${createdUser.email}`);",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/users?page=1&limit=20&sort_by=created_at&sort_order=DESC",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					],
+					"query": [
+						{
+							"key": "page",
+							"value": "1"
+						},
+						{
+							"key": "limit",
+							"value": "20"
+						},
+						{
+							"key": "sort_by",
+							"value": "created_at"
+						},
+						{
+							"key": "sort_order",
+							"value": "DESC"
+						}
+					]
+				},
+				"description": "Get paginated list of users with authentication"
+			},
+			"response": []
+		},
+		{
+			"name": "6. Get User by UID (Authenticated)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('User retrieved successfully', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('status');",
+							"    pm.expect(responseJson.status).to.eql('success');",
+							"    pm.expect(responseJson).to.have.property('data');",
+							"});",
+							"",
+							"pm.test('User data matches expected user', function () {",
+							"    const responseJson = pm.response.json();",
+							"    const user = responseJson.data;",
+							"    pm.expect(user.email).to.eql(pm.collectionVariables.get('testEmail'));",
+							"    pm.expect(user.uid).to.eql(pm.collectionVariables.get('userUid'));",
+							"    pm.expect(user.name).to.eql(pm.collectionVariables.get('testName'));",
+							"});",
+							"",
+							"pm.test('User has required fields', function () {",
+							"    const responseJson = pm.response.json();",
+							"    const user = responseJson.data;",
+							"    pm.expect(user).to.have.property('uid');",
+							"    pm.expect(user).to.have.property('name');",
+							"    pm.expect(user).to.have.property('email');",
+							"    pm.expect(user).to.have.property('created_at');",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/users/{{userUid}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users",
+						"{{userUid}}"
+					]
+				},
+				"description": "Get specific user by UID with authentication"
+			},
+			"response": []
+		},
+		{
+			"name": "7. Change User Password (Authenticated)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Password change successful', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('status');",
+							"    pm.expect(responseJson.status).to.eql('success');",
+							"    pm.expect(responseJson).to.have.property('message');",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+							"});",
+							"",
+							"// Update the password in collection variables for future use",
+							"pm.collectionVariables.set('testPassword', 'MyNewComplexP@ssw0rd2025!');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"current_password\": \"MyComplexP@ssw0rd2024!\",\n    \"new_password\": \"MyNewComplexP@ssw0rd2025!\",\n    \"confirm_new_password\": \"MyNewComplexP@ssw0rd2025!\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/users/change-password",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users",
+						"change-password"
+					]
+				},
+				"description": "Change user password with authentication"
+			},
+			"response": []
+		},
+		{
+			"name": "8. Logout (Authenticated)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Logout successful', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('status');",
+							"    pm.expect(responseJson.status).to.eql('success');",
+							"    pm.expect(responseJson).to.have.property('message');",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(1000);",
+							"});",
+							"",
+							"// Clear tokens after logout",
+							"pm.collectionVariables.unset('accessToken');",
+							"pm.collectionVariables.unset('refreshToken');",
+							"console.log('Logout successful, tokens cleared');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{accessToken}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/logout",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"logout"
+					]
+				},
+				"description": "Logout user and invalidate tokens"
+			},
+			"response": []
+		},
+		{
+			"name": "9. Verify Login with New Password",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Login with new password successful', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('status');",
+							"    pm.expect(responseJson.status).to.eql('success');",
+							"    pm.expect(responseJson).to.have.property('data');",
+							"    pm.expect(responseJson.data).to.have.property('access_token');",
+							"    pm.expect(responseJson.data).to.have.property('refresh_token');",
+							"    pm.expect(responseJson.data).to.have.property('access_token_expires_at');",
+							"    pm.expect(responseJson.data).to.have.property('refresh_token_expires_at');",
+							"    ",
+							"    console.log('Successfully logged in with new password');",
+							"});",
+							"",
+							"pm.test('User data is correct', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.data.email).to.eql(pm.collectionVariables.get('testEmail'));",
+							"    pm.expect(responseJson.data.uid).to.eql(pm.collectionVariables.get('userUid'));",
+							"});",
+							"",
+							"pm.test('Response time is acceptable', function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{testEmail}}\",\n    \"password\": \"{{testPassword}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/login",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				},
+				"description": "Verify that the password change was successful by logging in with the new password"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Set default base URL if not already set",
+					"if (!pm.collectionVariables.get('baseUrl')) {",
+					"    pm.collectionVariables.set('baseUrl', 'http://127.0.0.1:7890');",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test to ensure we're testing against the correct environment",
+					"pm.test('Testing against correct environment', function () {",
+					"    const baseUrl = pm.collectionVariables.get('baseUrl');",
+					"    pm.expect(baseUrl).to.include('127.0.0.1:7890');",
+					"});",
+					"",
+					"// Global test for response structure",
+					"pm.test('Response has valid JSON structure', function () {",
+					"    pm.response.to.be.json;",
+					"});"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://127.0.0.1:7890",
+			"type": "string"
+		},
+		{
+			"key": "testEmail",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "testName",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "testPassword",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "accessToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refreshToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userUid",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
