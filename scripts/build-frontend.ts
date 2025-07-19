@@ -6,7 +6,7 @@ import { execSync } from 'node:child_process';
 const isDev = process.env.NODE_ENV !== 'production';
 const isWatch = process.argv.includes('--watch');
 const isDocker = process.env.DOCKER_ENV === 'true' || fs.existsSync('/.dockerenv');
-const frontendDir = './app/frontend';
+const frontendDir = './app/hybrid';
 const outDir = path.join(frontendDir, 'assets');
 
 // Use esbuild-wasm in Docker environments to avoid platform issues
@@ -86,7 +86,7 @@ async function buildReactApp() {
 
             // Keep the process running
             console.log('✅ React frontend watcher started!');
-            console.log('🔄 Watching for changes in app/frontend/...');
+            console.log('🔄 Watching for changes in app/hybrid/...');
             process.on('SIGINT', async () => {
                 console.log('\n🧹 Stopping React watcher...');
                 await ctx.dispose();

@@ -46,14 +46,14 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         };
 
         // Fetch user data using turboQuery
-        const userResult = await turboQuery(`SELECT id, uid, name, email, password FROM users WHERE email = $1 LIMIT 1`, [input.email]);
+        const userResult = await turboQuery<User>(`SELECT id, uid, name, email, password FROM users WHERE email = $1 LIMIT 1`, [input.email]);
 
         // Check if user exists
         if (!Array.isArray(userResult) || userResult.length === 0) {
             return invalidCredentials;
         }
 
-        const user = userResult[0] as User;
+        const user = userResult[0];
 
         // Verify password using async Argon2 verification
         const isValidPassword = await verifyPassword(input.password, user.password);

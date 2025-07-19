@@ -139,9 +139,9 @@ func TestDetermineDataPath(t *testing.T) {
 	}{
 		{
 			name:         "Root path should return index.ts",
-			frontendPath: "/frontend",
+			frontendPath: "/hybrid",
 			ep: config.EndpointConfig{
-				Route: "/frontend/*",
+				Route: "/hybrid/*",
 				Path:  tempDir,
 				Options: map[string]any{
 					"data": "api",
@@ -151,9 +151,9 @@ func TestDetermineDataPath(t *testing.T) {
 		},
 		{
 			name:         "Root path with slash should return index.ts",
-			frontendPath: "/frontend/",
+			frontendPath: "/hybrid/",
 			ep: config.EndpointConfig{
-				Route: "/frontend/*",
+				Route: "/hybrid/*",
 				Path:  tempDir,
 				Options: map[string]any{
 					"data": "api",
@@ -163,9 +163,9 @@ func TestDetermineDataPath(t *testing.T) {
 		},
 		{
 			name:         "Settings path should return settings.ts",
-			frontendPath: "/frontend/settings",
+			frontendPath: "/hybrid/settings",
 			ep: config.EndpointConfig{
-				Route: "/frontend/*",
+				Route: "/hybrid/*",
 				Path:  tempDir,
 				Options: map[string]any{
 					"data": "api",
@@ -175,9 +175,9 @@ func TestDetermineDataPath(t *testing.T) {
 		},
 		{
 			name:         "Non-existent path should fallback to index.ts",
-			frontendPath: "/frontend/nonexistent",
+			frontendPath: "/hybrid/nonexistent",
 			ep: config.EndpointConfig{
-				Route: "/frontend/*",
+				Route: "/hybrid/*",
 				Path:  tempDir,
 				Options: map[string]any{
 					"data": "api",
@@ -187,9 +187,9 @@ func TestDetermineDataPath(t *testing.T) {
 		},
 		{
 			name:         "Custom data folder",
-			frontendPath: "/frontend/settings",
+			frontendPath: "/hybrid/settings",
 			ep: config.EndpointConfig{
-				Route: "/frontend/*",
+				Route: "/hybrid/*",
 				Path:  tempDir,
 				Options: map[string]any{
 					"data": "custom-api",
@@ -259,29 +259,29 @@ func TestHandleStaticAsset(t *testing.T) {
 	}{
 		{
 			name:           "Valid CSS file",
-			requestPath:    "/frontend/assets/styles.css",
+			requestPath:    "/hybrid/assets/styles.css",
 			expectedStatus: fasthttp.StatusOK,
 			expectedType:   "text/css",
 		},
 		{
 			name:           "Valid JS file",
-			requestPath:    "/frontend/assets/script.js",
+			requestPath:    "/hybrid/assets/script.js",
 			expectedStatus: fasthttp.StatusOK,
 			expectedType:   "application/javascript",
 		},
 		{
 			name:           "Non-existent file",
-			requestPath:    "/frontend/assets/nonexistent.css",
+			requestPath:    "/hybrid/assets/nonexistent.css",
 			expectedStatus: fasthttp.StatusNotFound,
 		},
 		{
 			name:           "Path traversal attempt",
-			requestPath:    "/frontend/assets/../malicious.txt",
+			requestPath:    "/hybrid/assets/../malicious.txt",
 			expectedStatus: fasthttp.StatusForbidden,
 		},
 		{
 			name:           "Invalid assets path",
-			requestPath:    "/frontend/assets/",
+			requestPath:    "/hybrid/assets/",
 			expectedStatus: fasthttp.StatusNotFound,
 		},
 	}
@@ -556,25 +556,25 @@ func TestIsAPIRequest(t *testing.T) {
 	}{
 		{
 			name:           "JSON Accept header",
-			path:           "/frontend/settings",
+			path:           "/hybrid/settings",
 			headers:        map[string]string{"Accept": "application/json"},
 			expectedResult: true,
 		},
 		{
 			name:           "JSON Accept with HTML (JSON preferred)",
-			path:           "/frontend/settings",
+			path:           "/hybrid/settings",
 			headers:        map[string]string{"Accept": "application/json, text/html"},
 			expectedResult: true,
 		},
 		{
 			name:           "HTML Accept header only",
-			path:           "/frontend/settings",
+			path:           "/hybrid/settings",
 			headers:        map[string]string{"Accept": "text/html,application/xhtml+xml"},
 			expectedResult: false,
 		},
 		{
 			name:           "XMLHttpRequest header",
-			path:           "/frontend/settings",
+			path:           "/hybrid/settings",
 			headers:        map[string]string{"X-Requested-With": "XMLHttpRequest"},
 			expectedResult: true,
 		},
@@ -586,19 +586,19 @@ func TestIsAPIRequest(t *testing.T) {
 		},
 		{
 			name:           "JSON Content-Type",
-			path:           "/frontend/settings",
+			path:           "/hybrid/settings",
 			headers:        map[string]string{"Content-Type": "application/json"},
 			expectedResult: true,
 		},
 		{
 			name:           "Regular browser request",
-			path:           "/frontend/settings",
+			path:           "/hybrid/settings",
 			headers:        map[string]string{"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"},
 			expectedResult: false,
 		},
 		{
 			name:           "No headers - default to browser",
-			path:           "/frontend/settings",
+			path:           "/hybrid/settings",
 			headers:        map[string]string{},
 			expectedResult: false,
 		},
@@ -702,31 +702,31 @@ func TestHybridEndpointRouting(t *testing.T) {
 	}{
 		{
 			name:         "Static asset request",
-			path:         "/frontend/assets/styles.css",
+			path:         "/hybrid/assets/styles.css",
 			headers:      map[string]string{},
 			expectedType: "asset",
 		},
 		{
 			name:         "API JSON request",
-			path:         "/frontend/settings",
+			path:         "/hybrid/settings",
 			headers:      map[string]string{"Accept": "application/json"},
 			expectedType: "api",
 		},
 		{
 			name:         "AJAX request",
-			path:         "/frontend/about",
+			path:         "/hybrid/about",
 			headers:      map[string]string{"X-Requested-With": "XMLHttpRequest"},
 			expectedType: "api",
 		},
 		{
 			name:         "Browser navigation",
-			path:         "/frontend/settings",
+			path:         "/hybrid/settings",
 			headers:      map[string]string{"Accept": "text/html,application/xhtml+xml"},
 			expectedType: "html",
 		},
 		{
 			name:         "Root frontend path",
-			path:         "/frontend",
+			path:         "/hybrid",
 			headers:      map[string]string{"Accept": "text/html"},
 			expectedType: "html",
 		},

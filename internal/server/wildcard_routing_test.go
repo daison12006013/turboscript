@@ -431,7 +431,7 @@ func TestFindMatchingEndpointWithWildcard(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			endpoint := server.findMatchingEndpoint(tc.requestURL, tc.method)
+			endpoint := server.FindMatchingEndpoint(tc.requestURL, tc.method)
 
 			if tc.shouldMatch {
 				if endpoint == nil {

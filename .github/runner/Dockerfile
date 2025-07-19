@@ -35,10 +35,10 @@ RUN apt-get update && apt-get install -y docker-ce-cli && rm -rf /var/lib/apt/li
 RUN curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 RUN chmod +x /usr/local/bin/docker-compose
 
-# Install Go 1.23.0
-RUN wget https://go.dev/dl/go1.23.0.linux-amd64.tar.gz
-RUN tar -C /usr/local -xzf go1.23.0.linux-amd64.tar.gz
-RUN rm go1.23.0.linux-amd64.tar.gz
+# Install Go 1.23.10
+RUN wget https://go.dev/dl/go1.23.10.linux-amd64.tar.gz
+RUN tar -C /usr/local -xzf go1.23.10.linux-amd64.tar.gz
+RUN rm go1.23.10.linux-amd64.tar.gz
 
 # Install Node.js 20 (LTS)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -

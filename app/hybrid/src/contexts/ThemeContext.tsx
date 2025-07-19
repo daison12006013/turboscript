@@ -23,7 +23,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
     // Initialize theme from server data
-    const routeData = (window as any).__ROUTE_DATA__ || { route: '/frontend', data: {} };
+    const routeData = (window as any).__ROUTE_DATA__ || { route: '/hybrid', data: {} };
     const fallbackTheme = routeData.data?.settings?.theme || 'light';
 
     const [theme, setTheme] = useState<string>(fallbackTheme);
@@ -34,7 +34,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     useEffect(() => {
         const fetchSettings = async () => {
             try {
-                const response = await fetch('/frontend/data/settings', {
+                const response = await fetch('/hybrid/data/settings', {
                     headers: {
                         'Content-Type': 'application/json'
                     }

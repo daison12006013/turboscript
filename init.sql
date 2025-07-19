@@ -181,3 +181,30 @@ BEGIN
     RETURN deleted_count;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Create scheduler executions table for tracking scheduled task execution history
+CREATE TABLE IF NOT EXISTS scheduler_executions (
+    id SERIAL PRIMARY KEY,
+    task_name VARCHAR(255) NOT NULL,
+    execution_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    jobs_deleted INTEGER DEFAULT 0,
+    history_deleted INTEGER DEFAULT 0,
+    retention_days_jobs INTEGER DEFAULT 15,
+    retention_days_history INTEGER DEFAULT 15,
+    execution_duration_ms INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index for faster lookups by task_name and execution_time
+CREATE INDEX IF NOT EXISTS idx_scheduler_executions_task_time ON scheduler_executions(task_name, execution_time);
+CREATE INDEX IF NOT EXISTS idx_scheduler_executions_created_at ON scheduler_executions(created_at);
+
+-- Add comment for documentation
+COMMENT ON TABLE scheduler_executions IS 'Tracks execution history of scheduled tasks, particularly useful for monitoring data retention cleanup operations';
+COMMENT ON COLUMN scheduler_executions.task_name IS 'Name of the scheduled task that was executed';
+COMMENT ON COLUMN scheduler_executions.execution_time IS 'When the task execution started';
+COMMENT ON COLUMN scheduler_executions.jobs_deleted IS 'Number of job records deleted (for cleanup tasks)';
+COMMENT ON COLUMN scheduler_executions.history_deleted IS 'Number of job history records deleted (for cleanup tasks)';
+COMMENT ON COLUMN scheduler_executions.retention_days_jobs IS 'Retention period used for jobs cleanup';
+COMMENT ON COLUMN scheduler_executions.retention_days_history IS 'Retention period used for job history cleanup';
+COMMENT ON COLUMN scheduler_executions.execution_duration_ms IS 'Task execution duration in milliseconds';

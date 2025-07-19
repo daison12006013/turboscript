@@ -31,10 +31,10 @@ export default function SettingsPage() {
     // Get theme context for global theme management
     const { theme: globalTheme, setTheme: setGlobalTheme, isDark } = useTheme();
 
-    // Use HYBRID data hook to fetch data from /frontend/data/settings endpoint
+    // Use HYBRID data hook to fetch data from /hybrid/data/settings endpoint
     const { data, loading, error } = useHybridDataWithNavigation<SettingsData>(
-        '/frontend/data/settings',
-        '/frontend/settings'
+        '/hybrid/data/settings',
+        '/hybrid/settings'
     );
 
     // Initialize settings from server data (HYBRID) - prioritize server data over global theme
@@ -95,7 +95,7 @@ export default function SettingsPage() {
 
         try {
             // Make real API call to update settings
-            const response = await fetch('/frontend/data/settings/update', {
+            const response = await fetch('/hybrid/data/settings/update', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -142,7 +142,7 @@ The runner is configured with these labels by default:
 The runner container includes:
 
 - ✅ Ubuntu 22.04 base image
-- ✅ Go 1.23.0
+- ✅ Go 1.23.10
 - ✅ Node.js 20 LTS
 - ✅ Docker CLI (Docker-in-Docker support)
 - ✅ PostgreSQL client

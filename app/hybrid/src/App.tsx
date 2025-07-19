@@ -9,7 +9,7 @@ import AboutPage from './pages/AboutPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Get the current route data from hybrid rendering
-const routeData = (window as any).__ROUTE_DATA__ || { route: '/frontend', data: {} };
+const routeData = (window as any).__ROUTE_DATA__ || { route: '/hybrid', data: {} };
 
 // Layout wrapper that provides the Outlet for nested routes and handles HYBRID navigation
 function LayoutWrapper() {
@@ -19,7 +19,7 @@ function LayoutWrapper() {
     useEffect(() => {
         // Convert server route to client route
         const serverRoute = routeData.route;
-        const expectedClientPath = serverRoute.replace('/frontend', '') || '/';
+        const expectedClientPath = serverRoute.replace('/hybrid', '') || '/';
 
         // If we're not already on the expected path, navigate to it
         // This handles cases where HYBRID determines a different route than what's in the URL
@@ -43,19 +43,19 @@ const router = createBrowserRouter([
         element: <LayoutWrapper />,
         children: [
             {
-                path: "/frontend",
+                path: "/hybrid",
                 element: <HomePage />
             },
             {
-                path: "/frontend/settings",
+                path: "/hybrid/settings",
                 element: <SettingsPage />
             },
             {
-                path: "/frontend/about",
+                path: "/hybrid/about",
                 element: <AboutPage />
             },
             {
-                path: "/frontend/*",
+                path: "/hybrid/*",
                 element: <NotFoundPage />
             }
         ]

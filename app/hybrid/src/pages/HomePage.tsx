@@ -25,10 +25,10 @@ interface HomeData {
 export default function HomePage() {
     const [stats, setStats] = useState({ requestsProcessed: 0, activeUsers: 0 });
 
-    // Use HYBRID data hook to fetch data from /frontend/data endpoint
+    // Use HYBRID data hook to fetch data from /hybrid/data endpoint
     const { data, loading, error } = useHybridDataWithNavigation<HomeData>(
-        '/frontend/data',
-        '/frontend'
+        '/hybrid/data',
+        '/hybrid'
     );
 
     // Animate counters
@@ -108,8 +108,8 @@ export default function HomePage() {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
                             <HybridLink
-                                to="/frontend/about"
-                                dataEndpoint="/frontend/data/about"
+                                to="/hybrid/about"
+                                dataEndpoint="/hybrid/data/about"
                                 className="inline-flex items-center justify-center px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl group"
                             >
                                 Learn More
@@ -118,8 +118,8 @@ export default function HomePage() {
                                 </svg>
                             </HybridLink>
                             <HybridLink
-                                to="/frontend/settings"
-                                dataEndpoint="/frontend/data/settings"
+                                to="/hybrid/settings"
+                                dataEndpoint="/hybrid/data/settings"
                                 className="inline-flex items-center justify-center px-6 py-3 bg-blue-500/20 text-white font-semibold rounded-lg hover:bg-blue-500/30 transition-all duration-200 border border-white/20 backdrop-blur-sm"
                             >
                                 Configure Settings

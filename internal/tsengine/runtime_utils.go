@@ -28,7 +28,6 @@ import (
 	"github.com/daison12006013/turboscript/internal/plugins"
 	"github.com/dop251/goja"
 	"github.com/dop251/goja_nodejs/buffer"
-	"github.com/dop251/goja_nodejs/console"
 	"github.com/dop251/goja_nodejs/require"
 	"github.com/dop251/goja_nodejs/url"
 )
@@ -57,10 +56,15 @@ func NewRuntimeUtils() *RuntimeUtils {
 		// Register turboPlugin function
 		RegisterSharedPluginModule(rt, registry)
 
+		// Register our custom console FIRST, before anything else can override it
+		RegisterCustomConsole(rt) // Enable custom console with [CONSOLE] prefixes
+
 		registry.Enable(rt) // Enable require() function
-		console.Enable(rt)  // Enable console.log, console.error, etc.
 		url.Enable(rt)      // Enable URL and URLSearchParams
 		buffer.Enable(rt)   // Enable Buffer for binary data handling
+
+		// Double-check and re-register console to ensure it sticks
+		RegisterCustomConsole(rt) // Enable custom console with [CONSOLE] prefixes again
 
 		return &JSRuntime{
 			Runtime:  rt,

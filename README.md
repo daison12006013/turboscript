@@ -43,15 +43,14 @@ TurboScript delivers exceptional performance with minimal resource usage:
 
 ### Endpoint Response Times
 
-Real-world API endpoint performance from E2E benchmark tests:
+Latest E2E benchmark results (`make test-e2e-bench`):
 
-| Endpoint | Response Time | Operations/sec |
-|----------|---------------|----------------|
-| Root Endpoint (`/`) | **1.55ms** | 783 ops/sec |
-| Authenticated Endpoints | **4.78ms** | 241 ops/sec |
+| Endpoint                        | Avg Response Time | Requests/sec | Memory/Allocations |
+|----------------------------------|------------------|--------------|-------------------|
+| Root Endpoint (JSON)             | **0.92ms**       | 1298 req/s   | 18.6KB / 140      |
+| Root Endpoint (HTML)             | **1.60ms**       | 715 req/s    | 19.1KB / 145      |
+| Authenticated Endpoint           | **15.35ms**      | 73 req/s     | 19.4KB / 146      |
 
-*Performance metrics measured with Go benchmarks on VirtualApple @ 2.50GHz (M3 MacBook Pro).*
+*Benchmarks run on Apple M3 Pro (darwin/arm64) using Go 1.23.10. See `internal/tests/` for details.*
 
-**Note**: Authenticated endpoints include JWT token verification and database queries, explaining the higher response time compared to the simple root endpoint.
-
-**Used**: You can run on your machine by using `make test-e2e-bench`
+**Note**: Authenticated endpoints include JWT verification and database queries, resulting in higher response times and allocations.

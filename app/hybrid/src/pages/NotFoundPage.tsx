@@ -29,7 +29,7 @@ export default function NotFoundPage() {
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Link
-                        to="/frontend"
+                        to="/hybrid"
                         className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                     >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,7 +39,7 @@ export default function NotFoundPage() {
                     </Link>
 
                     <Link
-                        to="/frontendabout"
+                        to="/hybridabout"
                         className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
                     >
                         Learn About TurboScript
@@ -50,13 +50,13 @@ export default function NotFoundPage() {
                 <div className="mt-12 pt-8 border-t border-gray-200">
                     <p className="text-sm text-gray-500 mb-4">Or try one of these popular pages:</p>
                     <div className="flex justify-center space-x-6">
-                        <Link to="/frontend" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        <Link to="/hybrid" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                             Home
                         </Link>
-                        <Link to="/frontend/settings" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        <Link to="/hybrid/settings" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                             Settings
                         </Link>
-                        <Link to="/frontend/about" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        <Link to="/hybrid/about" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                             About
                         </Link>
                     </div>

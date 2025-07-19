@@ -1,8 +1,6 @@
 module github.com/daison12006013/turboscript/turbo_modules/argon2
 
-go 1.23.0
-
-toolchain go1.23.10
+go 1.23.10
 
 require (
 	github.com/dop251/goja v0.0.0-20250630131328-58d95d85e994

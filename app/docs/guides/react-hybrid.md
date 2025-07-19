@@ -20,9 +20,9 @@ Add a React endpoint to your `turboscript.yml` configuration:
 
 ```yaml
 endpoints:
-  - route: /frontend/*
+  - route: /hybrid/*
     method: GET
-    path: ./app/frontend
+    path: ./app/hybrid
     type: "hybrid"
     options:
       app: "App.html"      # HTML template file
@@ -41,7 +41,7 @@ endpoints:
 ## Project Structure
 
 ```text
-app/frontend/
+app/hybrid/
 ├── App.html                # HTML template
 ├── src/                    # React source code
 │   ├── App.tsx             # Main React application
@@ -54,9 +54,9 @@ app/frontend/
 │   └── types/
 │       └── global.d.ts     # TypeScript global types
 ├── data/                   # Data endpoints (configurable)
-│   ├── index.ts            # Data for /frontend/
-│   ├── settings.ts         # Data for /frontend/settings
-│   └── about.ts            # Data for /frontend/about
+│   ├── index.ts            # Data for /hybrid/
+│   ├── settings.ts         # Data for /hybrid/settings
+│   └── about.ts            # Data for /hybrid/about
 └── assets/                 # Built assets (generated)
     ├── app.js              # Compiled React bundle
     ├── styles.css          # Compiled CSS
@@ -74,7 +74,7 @@ Create an `App.html` template in your frontend directory:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TurboScript React App</title>
-    <link href="/frontend/assets/styles.css" rel="stylesheet">
+    <link href="/hybrid/assets/styles.css" rel="stylesheet">
     <script>
         window.__ROUTE_DATA__ = {
             route: "{{.Route}}",
@@ -84,14 +84,14 @@ Create an `App.html` template in your frontend directory:
 </head>
 <body class="bg-gray-100">
     <div id="root"></div>
-    <script src="/frontend/assets/app.js"></script>
+    <script src="/hybrid/assets/app.js"></script>
 </body>
 </html>
 ```
 
 ### Template Variables
 
-- `{{.Route}}` - Current route path (e.g., `/frontend/settings`)
+- `{{.Route}}` - Current route path (e.g., `/hybrid/settings`)
 - `{{.Data}}` - JSON-encoded data from the data endpoint
 
 ## Data Endpoints
@@ -110,9 +110,9 @@ export const handle = async (_event: Event): Promise<TurboScriptResponse> => ({
             email: 'john@example.com'
         },
         navigation: [
-            { label: 'Home', href: '/frontend/' },
-            { label: 'Settings', href: '/frontend/settings' },
-            { label: 'About', href: '/frontend/about' }
+            { label: 'Home', href: '/hybrid/' },
+            { label: 'Settings', href: '/hybrid/settings' },
+            { label: 'About', href: '/hybrid/about' }
         ]
     }
 });
@@ -149,19 +149,19 @@ import AboutPage from './pages/AboutPage';
 import NotFoundPage from './pages/NotFoundPage';
 function App() {
     // Get route data injected by hybrid rendering
-    const routeData = (window as any).__ROUTE_DATA__ || { route: '/frontend/', data: {} };
+    const routeData = (window as any).__ROUTE_DATA__ || { route: '/hybrid/', data: {} };
     const currentRoute = routeData.route;
 
     // Determine which page to render based on current route
     let PageComponent;
     switch (currentRoute) {
-        case '/frontend/':
+        case '/hybrid/':
             PageComponent = HomePage;
             break;
-        case '/frontend/settings':
+        case '/hybrid/settings':
             PageComponent = SettingsPage;
             break;
-        case '/frontend/about':
+        case '/hybrid/about':
             PageComponent = AboutPage;
             break;
         default:
@@ -235,7 +235,7 @@ import * as esbuild from 'esbuild';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-const frontendDir = './app/frontend';
+const frontendDir = './app/hybrid';
 const outDir = path.join(frontendDir, 'assets');
 
 async function buildReactApp() {
@@ -283,7 +283,7 @@ make build-frontend
 
 The build system automatically rebuilds the frontend when:
 
-- Using `make dev` (Air hot reloading)
+- Using `make up` (Air hot reloading)
 - TypeScript/JSX files change (configured in `.air.toml`)
 - Running `make build` or `make build-dist`
 
@@ -293,10 +293,10 @@ The React HYBRID system automatically maps routes to data endpoints:
 
 | Frontend Route | Data Endpoint | Description |
 |---------------|---------------|-------------|
-| `/frontend/` | `data/index.ts` | Homepage data |
-| `/frontend/settings` | `data/settings.ts` | Settings page data |
-| `/frontend/about` | `data/about.ts` | About page data |
-| `/frontend/custom` | `data/custom.ts` | Custom page data |
+| `/hybrid/` | `data/index.ts` | Homepage data |
+| `/hybrid/settings` | `data/settings.ts` | Settings page data |
+| `/hybrid/about` | `data/about.ts` | About page data |
+| `/hybrid/custom` | `data/custom.ts` | Custom page data |
 
 If a specific data endpoint doesn't exist, the system falls back to `data/index.ts`.
 
@@ -319,17 +319,17 @@ If a specific data endpoint doesn't exist, the system falls back to `data/index.
 
 ### Asset URLs
 
-Assets are served under the `/frontend/assets/` path:
+Assets are served under the `/hybrid/assets/` path:
 
 ```html
 <!-- CSS -->
-<link href="/frontend/assets/styles.css" rel="stylesheet">
+<link href="/hybrid/assets/styles.css" rel="stylesheet">
 
 <!-- JavaScript -->
-<script src="/frontend/assets/app.js"></script>
+<script src="/hybrid/assets/app.js"></script>
 
 <!-- Images -->
-<img src="/frontend/assets/logo.png" alt="Logo">
+<img src="/hybrid/assets/logo.png" alt="Logo">
 ```
 
 ## TypeScript Configuration
@@ -450,7 +450,7 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
 For dynamic routes, use path parameters in your data endpoints:
 
 ```typescript
-// data/user.ts - handles /frontend/user/{id}
+// data/user.ts - handles /hybrid/user/{id}
 export const handle = async (event: Event): Promise<TurboScriptResponse> => {
     const userId = event.pathParameters?.id;
 
@@ -482,7 +482,7 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
 
 ### Development
 
-1. **Hot Reloading**: Use `make dev` for automatic rebuilds during development
+1. **Hot Reloading**: Use `make up` for automatic rebuilds during development
 2. **TypeScript**: Leverage full TypeScript support for type safety
 3. **Error Handling**: Implement proper error boundaries in React components
 4. **Testing**: Write tests for both data endpoints and React components
@@ -513,7 +513,7 @@ This will show detailed logs for:
 
 ## Examples
 
-See the complete working example in the `app/frontend/` directory of the TurboScript repository for a full implementation including:
+See the complete working example in the `app/hybrid/` directory of the TurboScript repository for a full implementation including:
 
 - Multi-page React application
 - Navigation with active states

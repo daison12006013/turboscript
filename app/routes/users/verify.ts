@@ -37,10 +37,10 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         const { uid: userUid } = tokenData;
 
         // Find user by UID
-        const userResult = await turboQuery(
+        const userResult = await turboQuery<User>(
             "SELECT uid, email, email_verified_at FROM users WHERE uid = $1 LIMIT 1",
             [userUid]
-        ) as User[];
+        );
 
         if (userResult.length === 0) {
             return {
@@ -80,10 +80,10 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         );
 
         // Fetch updated user data
-        const updatedUserResult = await turboQuery(
+        const updatedUserResult = await turboQuery<User>(
             "SELECT uid, email, email_verified_at FROM users WHERE uid = $1 LIMIT 1",
             [userUid]
-        ) as User[];
+        );
 
         return {
             code: 200,

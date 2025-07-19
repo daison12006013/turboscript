@@ -93,7 +93,7 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         const existingUserResult = await turboQuery(
             "SELECT uid FROM users WHERE email = $1 LIMIT 1",
             [input.email]
-        ) as User[];
+        );
 
         if (existingUserResult.length > 0) {
             return {
@@ -114,10 +114,10 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         );
 
         // Fetch the user that was just created
-        const fetchUserResult = await turboQuery(
+        const fetchUserResult = await turboQuery<User>(
             "SELECT * FROM users WHERE email = $1",
             [input.email]
-        ) as User[];
+        );
 
         if (!Array.isArray(fetchUserResult) || fetchUserResult.length === 0) {
             return {

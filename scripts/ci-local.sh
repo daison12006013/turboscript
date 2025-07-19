@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-GO_VERSION="1.23.0"
+GO_VERSION="1.23.10"
 POSTGRES_VERSION="16"
 CI_WORKSPACE="${CI_WORKSPACE:-/tmp/turboscript-ci}"
 SKIP_CLEANUP="${SKIP_CLEANUP:-false}"

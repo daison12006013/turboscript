@@ -10,7 +10,7 @@ This guide helps you diagnose and fix common issues in TurboScript applications.
 
 **Symptoms:**
 
-- Error when running `make dev`
+- Error when running `make up`
 - Port already in use
 - Database connection failed
 

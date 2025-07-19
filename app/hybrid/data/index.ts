@@ -3,7 +3,7 @@ export const handle = async (_event: Event): Promise<TurboScriptResponse> => ({
     response: {
         message: 'Welcome to TurboScript React',
         framework: 'TurboScript',
-        version: '0.0.1',
+        version: '0.1.0',
         description: 'A hybrid web framework combining TypeScript and Go',
         features: [
             'Hybrid rendering',

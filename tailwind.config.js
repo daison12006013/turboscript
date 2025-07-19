@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./app/frontend/**/*.{js,ts,jsx,tsx,html}",
-    "./app/frontend/**/*.html",
+    "./app/hybrid/**/*.{js,ts,jsx,tsx,html}",
+    "./app/hybrid/**/*.html",
   ],
   darkMode: 'class', // Enable dark mode with class strategy
   theme: {

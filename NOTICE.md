@@ -38,15 +38,15 @@ This software incorporates the following third-party components:
 | golang.org/x/text                  | BSD-3-Clause | Include BSD-3-Clause license text and copyright notice  | internal/server/server.go                                                        |
 | @tailwindcss/typography            | MIT          | Include MIT license text and copyright notice           | tailwind.config.js                                                               |
 | @types/jsonwebtoken                | MIT          | Include MIT license text and copyright notice           | package.json, app/routes/auth/                                                   |
-| @types/react                       | MIT          | Include MIT license text and copyright notice           | package.json, app/frontend/                                                      |
-| @types/react-dom                   | MIT          | Include MIT license text and copyright notice           | package.json, app/frontend/                                                      |
+| @types/react                       | MIT          | Include MIT license text and copyright notice           | package.json, app/hybrid/                                                      |
+| @types/react-dom                   | MIT          | Include MIT license text and copyright notice           | package.json, app/hybrid/                                                      |
 | autoprefixer                       | MIT          | Include MIT license text and copyright notice           | postcss.config.js                                                                |
 | bcryptjs                           | MIT          | Include MIT license text and copyright notice           | package.json, app/utils/password.ts                                              |
 | jsonwebtoken                       | MIT          | Include MIT license text and copyright notice           | package.json, app/utils/jwt.ts                                                   |
 | postcss                            | MIT          | Include MIT license text and copyright notice           | postcss.config.js                                                                |
-| react                              | MIT          | Include MIT license text and copyright notice           | package.json, app/frontend/                                                      |
-| react-dom                          | MIT          | Include MIT license text and copyright notice           | package.json, app/frontend/                                                      |
-| react-router-dom                   | MIT          | Include MIT license text and copyright notice           | package.json, app/frontend/                                                      |
+| react                              | MIT          | Include MIT license text and copyright notice           | package.json, app/hybrid/                                                      |
+| react-dom                          | MIT          | Include MIT license text and copyright notice           | package.json, app/hybrid/                                                      |
+| react-router-dom                   | MIT          | Include MIT license text and copyright notice           | package.json, app/hybrid/                                                      |
 | @types/bcryptjs                    | MIT          | Include MIT license text and copyright notice           | package.json, app/utils/password.ts                                              |
 | @types/node                        | MIT          | Include MIT license text and copyright notice           | package.json, tsconfig.json                                                      |
 | @typescript-eslint/eslint-plugin   | MIT          | Include MIT license text and copyright notice           | package.json, eslint.config.js                                                   |

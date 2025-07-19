@@ -169,3 +169,38 @@ func Warn(format string, args ...any) {
 		logger.Printf("[WARN] "+format, args...)
 	}
 }
+
+// Console logging functions for JavaScript runtime integration
+
+// ConsoleLog logs a console.log message with [CONSOLE] [LOG] prefix.
+func ConsoleLog(args ...any) {
+	if infoEnabled {
+		logger.Printf("[CONSOLE] [LOG] %v", args...)
+	}
+}
+
+// ConsoleError logs a console.error message with [CONSOLE] [ERROR] prefix.
+func ConsoleError(args ...any) {
+	logger.Printf("[CONSOLE] [ERROR] %v", args...)
+}
+
+// ConsoleWarn logs a console.warn message with [CONSOLE] [WARN] prefix.
+func ConsoleWarn(args ...any) {
+	if warningEnabled {
+		logger.Printf("[CONSOLE] [WARN] %v", args...)
+	}
+}
+
+// ConsoleInfo logs a console.info message with [CONSOLE] [INFO] prefix.
+func ConsoleInfo(args ...any) {
+	if infoEnabled {
+		logger.Printf("[CONSOLE] [INFO] %v", args...)
+	}
+}
+
+// ConsoleDebug logs a console.debug message with [CONSOLE] [DEBUG] prefix.
+func ConsoleDebug(args ...any) {
+	if debugEnabled {
+		logger.Printf("[CONSOLE] [DEBUG] %v", args...)
+	}
+}

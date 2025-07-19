@@ -54,9 +54,9 @@ build-dist: ## Build for distribution (compile TS to JS and create dist folder)
 	@echo "📁 Copying documentation files..."
 	cp README.md CONTRIBUTING.md LICENSE SECURITY.md dist/
 	@echo "📦 Copying React frontend assets..."
-	mkdir -p dist/app/frontend
-	cp -r app/frontend/assets dist/app/frontend/
-	cp app/frontend/App.html dist/app/frontend/
+	mkdir -p dist/app/hybrid
+	cp -r app/hybrid/assets dist/app/hybrid/
+	cp app/hybrid/App.html dist/app/hybrid/
 	@echo "⚙️  Modifying configuration for production..."
 	@if [ "$$(uname)" = "Darwin" ]; then \
 		sed -i '' 's/debug: true/debug: false/g' dist/turboscript.yml; \

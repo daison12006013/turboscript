@@ -8,7 +8,7 @@
     {{if and .Assets (index .Assets "styles.css")}}
     <link href='{{index .Assets "styles.css"}}' rel="stylesheet">
     {{else}}
-    <link href="/frontend/assets/styles.css" rel="stylesheet">
+    <link href="/hybrid/assets/styles.css" rel="stylesheet">
     {{end}}
     <script>
         window.__ROUTE_DATA__ = {
@@ -23,7 +23,7 @@
     {{if and .Assets (index .Assets "app.js")}}
     <script src='{{index .Assets "app.js"}}'></script>
     {{else}}
-    <script src="/frontend/assets/app.js"></script>
+    <script src="/hybrid/assets/app.js"></script>
     {{end}}
 </body>
 

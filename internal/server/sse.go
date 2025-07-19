@@ -264,75 +264,6 @@ func (sm *SSEManager) checkCORS(ctx *fasthttp.RequestCtx) bool {
 	return false
 }
 
-// writeSSEMessage writes a Server-Sent Events message to the response.
-func (sm *SSEManager) writeSSEMessage(ctx *fasthttp.RequestCtx, msg SSEMessage) error {
-	// If this is a raw message, write it directly without formatting
-	if msg.Raw && msg.Data != nil {
-		dataStr := fmt.Sprintf("%v", msg.Data)
-		data := []byte(dataStr)
-		_, err := ctx.Write(data)
-		if err == nil {
-			// Force immediate flush to client
-			if flusher, ok := ctx.Response.BodyWriter().(interface{ Flush() error }); ok {
-				if flushErr := flusher.Flush(); flushErr != nil {
-					logger.Error("Failed to flush SSE heartbeat: %v", flushErr)
-				}
-			}
-		}
-		return err
-	}
-
-	var output strings.Builder
-
-	// Write message ID
-	if msg.ID != "" {
-		output.WriteString(fmt.Sprintf("id: %s\n", msg.ID))
-	}
-
-	// Write event type
-	if msg.Event != "" {
-		output.WriteString(fmt.Sprintf("event: %s\n", msg.Event))
-	}
-
-	// Write retry interval
-	if msg.Retry > 0 {
-		output.WriteString(fmt.Sprintf("retry: %d\n", msg.Retry))
-	}
-
-	// Write data
-	if msg.Data != nil {
-		var dataStr string
-		dataBytes, err := json.Marshal(msg.Data)
-		if err != nil {
-			return fmt.Errorf("failed to marshal SSE data: %w", err)
-		}
-		dataStr = string(dataBytes)
-
-		// Handle multi-line data
-		lines := strings.Split(dataStr, "\n")
-		for _, line := range lines {
-			output.WriteString(fmt.Sprintf("data: %s\n", line))
-		}
-	}
-
-	// End message with double newline
-	output.WriteString("\n")
-
-	// Write to response
-	data := []byte(output.String())
-
-	_, err := ctx.Write(data)
-	if err == nil {
-		// Force immediate flush to client
-		if flusher, ok := ctx.Response.BodyWriter().(interface{ Flush() error }); ok {
-			if flushErr := flusher.Flush(); flushErr != nil {
-				logger.Error("Failed to flush SSE response: %v", flushErr)
-			}
-		}
-	}
-	return err
-}
-
 // writeSSEMessageStream writes an SSE message using a bufio.Writer for proper streaming
 func (sm *SSEManager) writeSSEMessageStream(w *bufio.Writer, msg SSEMessage) error {
 	// If this is a raw message, write it directly without formatting
@@ -393,7 +324,7 @@ func (sm *SSEManager) writeSSEMessageStream(w *bufio.Writer, msg SSEMessage) err
 	return err
 }
 
-// sendMessageStream sends a message through SSE connection using streaming writer
+// sendMessageStream sends a message through SSE connection using streaming writer.
 func (sm *SSEManager) sendMessageStream(sseConn *SSEConnection, msg SSEMessage, w *bufio.Writer) {
 	logger.Debug("Attempting to send message to connection %s via stream", sseConn.ID)
 
@@ -404,7 +335,7 @@ func (sm *SSEManager) sendMessageStream(sseConn *SSEConnection, msg SSEMessage, 
 	}
 }
 
-// processHandlerResponseStream processes handler response for streaming connections
+// processHandlerResponseStream processes handler response for streaming connections.
 func (sm *SSEManager) processHandlerResponseStream(sseConn *SSEConnection, response map[string]interface{}, w *bufio.Writer) {
 	logger.Debug("Processing handler response: %+v", response)
 
@@ -562,36 +493,6 @@ func (sm *SSEManager) processHandlerResponse(sseConn *SSEConnection, response ma
 
 	// If no SSE data found, log it
 	logger.Debug("No SSE data found in response, connection %s will use default behavior", sseConn.ID)
-}
-
-// executeHandler executes a TypeScript SSE handler.
-func (sm *SSEManager) executeHandler(handlerPath, eventType string, sseConn *SSEConnection, data interface{}) {
-	// Create proper event context for TypeScript handler
-	sseContext := map[string]interface{}{
-		"type":       "sse",
-		"eventType":  eventType,
-		"connection": sseConn,
-		"data":       data,
-	}
-
-	event := map[string]interface{}{
-		"headers":         make(map[string]string),
-		"queryParameters": make(map[string]string),
-		"pathParameters":  make(map[string]string),
-		"body":            make(map[string]interface{}),
-		"env":             make(map[string]string),
-		"context":         sseContext,
-	}
-
-	// Get an executor from the pool
-	executor := sm.server.getExecutor()
-	defer sm.server.returnExecutor(executor)
-
-	// Execute the handler
-	_, err := executor.ExecuteHandleAutoWithTimeout(handlerPath, event, 30)
-	if err != nil {
-		logger.Error("SSE handler execution failed for %s: %v", handlerPath, err)
-	}
 }
 
 // Helper methods

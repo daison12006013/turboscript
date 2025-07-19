@@ -474,16 +474,41 @@ func BenchmarkE2EEndpoints(b *testing.B) {
 		b.Fatal("Server not ready for benchmarking")
 	}
 
-	b.Run("Root_Endpoint_Performance", func(b *testing.B) {
+	b.Run("Root_Endpoint_JSON_Performance", func(b *testing.B) {
 		client := &http.Client{Timeout: 5 * time.Second}
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			resp, err := client.Get(baseURL + "/")
+			reqJSON, err := http.NewRequest("GET", baseURL+"/", nil)
 			if err != nil {
-				b.Fatalf("Request failed: %v", err)
+				b.Fatalf("Failed to create JSON request: %v", err)
 			}
-			resp.Body.Close()
+			reqJSON.Header.Set("Content-Type", "application/json")
+			reqJSON.Header.Set("Accept", "application/json")
+			respJSON, err := client.Do(reqJSON)
+			if err != nil {
+				b.Fatalf("JSON request failed: %v", err)
+			}
+			respJSON.Body.Close()
+		}
+	})
+
+	b.Run("Root_Endpoint_HTML_Performance", func(b *testing.B) {
+		client := &http.Client{Timeout: 5 * time.Second}
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			reqHTML, err := http.NewRequest("GET", baseURL+"/", nil)
+			if err != nil {
+				b.Fatalf("Failed to create HTML request: %v", err)
+			}
+			reqHTML.Header.Set("Content-Type", "text/html")
+			reqHTML.Header.Set("Accept", "text/html")
+			respHTML, err := client.Do(reqHTML)
+			if err != nil {
+				b.Fatalf("HTML request failed: %v", err)
+			}
+			respHTML.Body.Close()
 		}
 	})
 

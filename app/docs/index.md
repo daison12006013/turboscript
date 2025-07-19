@@ -25,7 +25,7 @@ npm install && go mod download
 
 # Start development environment
 docker-compose -f docker-compose.dev.yml up -d
-make dev
+make up
 ```
 
 Your API will be running at `http://localhost:7890` with hot reloading enabled.

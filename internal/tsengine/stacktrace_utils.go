@@ -62,7 +62,7 @@ func (de *DetailedError) Error() string {
 func (de *DetailedError) String() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("=== TurboScript Detailed Error Report ===\n"))
+	sb.WriteString("=== TurboScript Detailed Error Report ===\n")
 	sb.WriteString(fmt.Sprintf("Timestamp: %s\n", de.Timestamp.Format(time.RFC3339)))
 	sb.WriteString(fmt.Sprintf("Error Type: %s\n", de.ErrorType))
 	sb.WriteString(fmt.Sprintf("Message: %s\n", de.Message))
