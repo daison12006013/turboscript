@@ -40,7 +40,7 @@
 The development server runs on port 7890 with hot-reloading enabled:
 
 ```bash
-make dev
+make up
 ```
 
 This command starts the development server with:
@@ -52,7 +52,7 @@ This command starts the development server with:
 
 ### Working on the React Frontend
 
-When developing the React frontend (located in `app/frontend/`), you must run the following command in a separate terminal to enable live rebuilding of React components:
+When developing the React frontend (located in `app/hybrid/`), you must run the following command in a separate terminal to enable live rebuilding of React components:
 
 ```bash
 npm run watch

@@ -1,3 +1,5 @@
+version: 1
+
 # TurboScript Configuration Example
 # This file demonstrates all available configuration options
 
@@ -85,10 +87,70 @@ jobs:
   timeout: 30
   queue_size: 1000
   path: "./app/jobs"
-  data_retention:
-    jobs_days: 15
-    history_days: 15
-    auto_cleanup: true
+
+# Scheduler Configuration
+# Similar to cron jobs but integrated with TurboScript's TypeScript execution environment
+scheduler:
+  enabled: true
+  timezone: "UTC"           # Default timezone for all scheduled tasks
+  path: "./app/schedulers"  # Directory containing scheduler handler files
+  log_level: "info"         # Logging level for scheduler: debug, info, warn, error
+
+  tasks:
+    # Jobs retention cleanup task - runs daily at 2 AM
+    - name: "jobs-retention-cleanup"
+      cron: "0 0 2 * * *"                  # Daily at 2:00 AM UTC (seconds, minutes, hours, day, month, weekday)
+      handler: "jobs-retention.ts"         # Relative to scheduler path
+      enabled: true
+      timezone: "UTC"
+      timeout: 300                         # 5 minutes timeout for cleanup
+      description: "Clean up old jobs and job history records based on retention policy"
+      payload:
+        cleanup_type: "all"                # Can be: jobs, history, all
+        dry_run: false                     # Set to true to see what would be deleted without actually deleting
+      environment:
+        CLEANUP_LOG_LEVEL: "info"
+
+    # Example: Daily analytics processing
+    - name: "daily-analytics"
+      cron: "0 0 3 * * *"                  # Daily at 3:00 AM UTC (6-field cron format)
+      handler: "daily-analytics.ts"
+      enabled: false                       # Disabled by default
+      timezone: "UTC"
+      timeout: 600                         # 10 minutes timeout
+      description: "Process daily analytics and generate reports"
+      payload:
+        date: "yesterday"                  # Special value for yesterday's date
+        include_charts: true
+      environment:
+        ANALYTICS_DEBUG: "false"
+
+    # Example: Weekly report generation
+    - name: "weekly-reports"
+      cron: "0 0 1 * * 1"                  # Weekly on Monday at 1:00 AM UTC
+      handler: "weekly-reports.ts"
+      enabled: false                       # Disabled by default
+      timezone: "America/New_York"         # Custom timezone
+      timeout: 1800                        # 30 minutes timeout
+      description: "Generate and email weekly reports to administrators"
+      payload:
+        report_type: "summary"
+        recipients: ["admin@example.com"]
+      environment:
+        REPORT_DEBUG: "false"
+
+    # Example: Hourly health checks
+    - name: "health-check"
+      cron: "0 0 * * * *"                  # Every hour on the hour
+      handler: "health-check.ts"
+      enabled: false                       # Disabled by default
+      timezone: "UTC"
+      timeout: 60                          # 1 minute timeout
+      description: "Perform system health checks and alerting"
+      payload:
+        check_database: true
+        check_external_apis: true
+        alert_threshold: 5000              # Response time threshold in ms
 
 # Environment variables to inject into TypeScript execution context
 env:

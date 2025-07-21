@@ -106,16 +106,17 @@ declare global {
     }
 
     // turboQuery function for executing database queries.
-    // Interpreted in Go, so it can return either an array of results or a Promise that resolves to an array.
+    // Always returns a Promise that resolves to an array of results.
+    // When no rows are found, returns an empty array (never null).
     // Timeout behavior is controlled by the global 'timeout' setting in turboscript.yml
     // or per-endpoint 'timeout' setting in the endpoint configuration.
     // Database queries that exceed the timeout will throw an error.
 
     // Standard signature (uses default connection)
-    function turboQuery<T = unknown>(query: string, params?: unknown[]): Promise<T[]>;
+    function turboQuery<T = any>(query: string, params?: Record<string, any>): Promise<T[]>;
 
     // Object signature with connection support
-    function turboQuery<T = unknown>(options: {
+    function turboQuery<T = any>(options: {
         query: string;
         bindings?: unknown[];
         connection?: string; // Connection name from turboscript.yml database.connections

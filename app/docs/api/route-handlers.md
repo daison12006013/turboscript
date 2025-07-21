@@ -440,14 +440,14 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         // Use authenticated user's data directly
         const userUid = userPayload.uid;
 
-        const { file_data, file_name, content_type } = event.body as {
-            file_data?: string;    // Base64 encoded file data
+        const { fileData, file_name, content_type } = event.body as {
+            fileData?: string;    // Base64 encoded file data
             file_name?: string;
             content_type?: string;
         };
 
         // Validate file upload
-        if (!file_data || !file_name) {
+        if (!fileData || !file_name) {
             return {
                 code: 400,
                 response: {
@@ -472,7 +472,7 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         }
 
         // Validate file size (base64 decoded size)
-        const fileSizeBytes = (file_data.length * 3) / 4; // Approximate decoded size
+        const fileSizeBytes = (fileData.length * 3) / 4; // Approximate decoded size
         const maxSizeBytes = 5 * 1024 * 1024; // 5MB
 
         if (fileSizeBytes > maxSizeBytes) {
@@ -494,8 +494,8 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         const [fileResult, userUpdate] = await Promise.all([
             // Save to file storage (example using database storage)
             turboQuery(
-                'INSERT INTO user_files (user_id, filename, original_name, content_type, file_data, size_bytes, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id, filename',
-                [userUid, uniqueFileName, file_name, content_type, file_data, fileSizeBytes]
+                'INSERT INTO user_files (user_id, filename, original_name, content_type, fileData, size_bytes, created_at) VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING id, filename',
+                [userUid, uniqueFileName, file_name, content_type, fileData, fileSizeBytes]
             ),
 
             // Update user avatar reference

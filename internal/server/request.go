@@ -22,8 +22,14 @@
 package server
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
+	"path/filepath"
+	"strings"
 
 	"github.com/daison12006013/turboscript/internal/config"
 	"github.com/daison12006013/turboscript/internal/logger"
@@ -64,7 +70,8 @@ func (s *Server) parseRequestToEvent(ctx *fasthttp.RequestCtx, ep config.Endpoin
 	}, nil
 }
 
-// parseRequestBody parses the request body from JSON for POST, PUT, and PATCH requests.
+// parseRequestBody parses the request body from JSON for POST, PUT, and PATCH requests,
+// or multipart/form-data for file uploads, or raw binary data for direct binary uploads.
 func (s *Server) parseRequestBody(ctx *fasthttp.RequestCtx) (map[string]any, error) {
 	var body map[string]any
 	method := string(ctx.Method())
@@ -78,6 +85,22 @@ func (s *Server) parseRequestBody(ctx *fasthttp.RequestCtx) (map[string]any, err
 		return make(map[string]any), nil
 	}
 
+	// Check content type to determine parsing method
+	contentType := string(ctx.Request.Header.ContentType())
+
+	if strings.Contains(contentType, "multipart/form-data") {
+		// Parse multipart/form-data for file uploads
+		return s.parseMultipartBody(ctx)
+	} else if strings.HasPrefix(contentType, "image/") ||
+			  strings.HasPrefix(contentType, "video/") ||
+			  strings.HasPrefix(contentType, "audio/") ||
+			  contentType == "application/pdf" ||
+			  contentType == "application/octet-stream" {
+		// Handle raw binary uploads
+		return s.parseRawBinaryBody(ctx, contentType)
+	}
+
+	// Default: parse as JSON
 	if err := json.Unmarshal(postBody, &body); err != nil {
 		logger.Debug("Body parsing failed: %v", err)
 		return nil, fmt.Errorf("invalid JSON in request body: %w", err)
@@ -95,4 +118,100 @@ func (s *Server) parseRequestHeaders(ctx *fasthttp.RequestCtx) map[string]string
 	})
 	logger.Debug("Request headers: %+v", headers)
 	return headers
+}
+
+// parseMultipartBody parses multipart/form-data requests for file uploads.
+func (s *Server) parseMultipartBody(ctx *fasthttp.RequestCtx) (map[string]any, error) {
+	// Extract boundary from Content-Type header
+	contentType := string(ctx.Request.Header.ContentType())
+	_, params, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse multipart content type: %w", err)
+	}
+
+	boundary, ok := params["boundary"]
+	if !ok {
+		return nil, fmt.Errorf("missing boundary in multipart content type")
+	}
+
+	// Create multipart reader
+	reader := multipart.NewReader(strings.NewReader(string(ctx.PostBody())), boundary)
+
+	files := []map[string]any{}
+	fields := make(map[string]string)
+
+	// Parse each part
+	for {
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logger.Error("Error reading multipart part: %v", err)
+			continue
+		}
+
+		// Read part data
+		partData, err := io.ReadAll(part)
+		if err != nil {
+			logger.Error("Error reading part data: %v", err)
+			part.Close()
+			continue
+		}
+		part.Close()
+
+		if part.FileName() != "" {
+			// This is a file part
+			mimeType := part.Header.Get("Content-Type")
+			if mimeType == "" {
+				// Try to detect MIME type from file extension
+				mimeType = mime.TypeByExtension(filepath.Ext(part.FileName()))
+				if mimeType == "" {
+					mimeType = "application/octet-stream"
+				}
+			}
+
+			file := map[string]any{
+				"filename": part.FileName(),
+				"data":     base64.StdEncoding.EncodeToString(partData), // Convert to base64 for TypeScript
+				"size":     len(partData),
+				"mimeType": mimeType,
+			}
+			files = append(files, file)
+
+			logger.Debug("Parsed file: %s (%d bytes, %s)", part.FileName(), len(partData), mimeType)
+		} else {
+			// This is a form field
+			fieldName := part.FormName()
+			if fieldName != "" {
+				fields[fieldName] = string(partData)
+				logger.Debug("Parsed field: %s = %s", fieldName, string(partData))
+			}
+		}
+	}
+
+	result := map[string]any{
+		"files":  files,
+		"fields": fields,
+	}
+
+	logger.Debug("Parsed multipart body: %d files, %d fields", len(files), len(fields))
+	return result, nil
+}
+
+// parseRawBinaryBody parses raw binary data uploads.
+func (s *Server) parseRawBinaryBody(ctx *fasthttp.RequestCtx, contentType string) (map[string]any, error) {
+	postBody := ctx.PostBody()
+
+	// Convert binary data to base64 for TypeScript consumption
+	binaryDataB64 := base64.StdEncoding.EncodeToString(postBody)
+
+	result := map[string]any{
+		"binaryData": binaryDataB64,
+		"contentType": contentType,
+		"size": len(postBody),
+	}
+
+	logger.Debug("Parsed raw binary body: %d bytes, content-type: %s", len(postBody), contentType)
+	return result, nil
 }

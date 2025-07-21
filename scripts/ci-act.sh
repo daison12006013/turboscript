@@ -173,7 +173,7 @@ main() {
     fi
 
     # Add environment variables
-    act_cmd="$act_cmd --env GO_VERSION=1.23.0"
+    act_cmd="$act_cmd --env GO_VERSION=1.23.10"
     act_cmd="$act_cmd --env POSTGRES_VERSION=16"
 
     # If specific jobs are requested

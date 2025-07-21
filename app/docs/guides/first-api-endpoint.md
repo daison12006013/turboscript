@@ -56,7 +56,7 @@ endpoints:
 
 ## Step 3: Test Your Endpoint
 
-With TurboScript running (`make dev`), test your endpoint:
+With TurboScript running (`make up`), test your endpoint:
 
 ```bash
 curl http://localhost:7890/api/users

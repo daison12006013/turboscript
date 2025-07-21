@@ -270,7 +270,7 @@ Create separate configuration files:
 
 ```bash
 # Development
-make dev  # Uses turboscript.dev.yml
+make up  # Uses turboscript.dev.yml
 
 # Production
 ./turboscript  # Uses turboscript.yml

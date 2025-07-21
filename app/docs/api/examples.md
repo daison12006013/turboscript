@@ -867,13 +867,13 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         const userUid = userPayload.uid;
 
         const {
-            file_data,
+            fileData,
             file_name,
             content_type,
             folder = 'general',
             is_public = false
         } = event.body as {
-            file_data: string;        // Base64 encoded
+            fileData: string;        // Base64 encoded
             file_name: string;
             content_type: string;
             folder?: string;
@@ -881,7 +881,7 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         };
 
         // Validation
-        if (!file_data || !file_name || !content_type) {
+        if (!fileData || !file_name || !content_type) {
             return {
                 code: 400,
                 response: {
@@ -912,7 +912,7 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
         }
 
         // File size validation
-        const fileSizeBytes = (file_data.length * 3) / 4;
+        const fileSizeBytes = (fileData.length * 3) / 4;
         const maxSizeBytes = 10 * 1024 * 1024; // 10MB
 
         if (fileSizeBytes > maxSizeBytes) {
@@ -961,12 +961,12 @@ export const handle = async (event: Event): Promise<TurboScriptResponse> => {
             turboQuery(`
                 INSERT INTO user_files (
                     user_id, filename, original_name, content_type,
-                    file_data, file_size, folder, is_public, created_at
+                    fileData, file_size, folder, is_public, created_at
                 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
                 RETURNING id, filename, file_size, created_at
             `, [
                 userUid, uniqueFileName, file_name, content_type,
-                file_data, fileSizeBytes, folder, is_public
+                fileData, fileSizeBytes, folder, is_public
             ]),
 
             turboQuery(

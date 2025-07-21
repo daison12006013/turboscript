@@ -12,7 +12,7 @@ The system generates MD5 hashes based on file content:
 
 ```go
 // Example: styles.css content -> MD5 hash -> b48d5304f1ffdd2c
-/frontend/assets/styles.css?v=b48d5304f1ffdd2c
+/hybrid/assets/styles.css?v=b48d5304f1ffdd2c
 ```
 
 **Key Benefits:**
@@ -28,8 +28,8 @@ The system automatically scans your assets directory and creates a mapping:
 
 ```go
 assetMap := map[string]string{
-    "styles.css": "/frontend/assets/styles.css?v=b48d5304f1ffdd2c",
-    "app.js":     "/frontend/assets/app.js?v=68f2ea58eb4c7770",
+    "styles.css": "/hybrid/assets/styles.css?v=b48d5304f1ffdd2c",
+    "app.js":     "/hybrid/assets/app.js?v=68f2ea58eb4c7770",
 }
 ```
 
@@ -41,7 +41,7 @@ Assets are injected into your React app template using Go templates:
 {{if and .Assets (index .Assets "styles.css")}}
     <link href='{{index .Assets "styles.css"}}' rel="stylesheet">
 {{else}}
-    <link href="/frontend/assets/styles.css" rel="stylesheet">
+    <link href="/hybrid/assets/styles.css" rel="stylesheet">
 {{end}}
 ```
 
@@ -53,8 +53,8 @@ Enable asset versioning in your `turboscript.yml`:
 
 ```yaml
 endpoints:
-  - route: "/frontend/*"
-    path: "app/frontend"
+  - route: "/hybrid/*"
+    path: "app/hybrid"
     type: "react"
     options:
       assets: "assets"
@@ -91,7 +91,7 @@ The React template receives a `ReactData` struct:
 
 ```go
 type ReactData struct {
-    Route  string            // Current route (e.g., "/frontend")
+    Route  string            // Current route (e.g., "/hybrid")
     Data   string            // JSON-encoded initial data
     Assets map[string]string // Asset name -> Versioned URL mapping
 }
@@ -103,10 +103,10 @@ If asset versioning fails or is disabled, the template falls back to standard UR
 
 ```html
 <!-- With versioning -->
-<link href="/frontend/assets/styles.css?v=b48d5304f1ffdd2c" rel="stylesheet">
+<link href="/hybrid/assets/styles.css?v=b48d5304f1ffdd2c" rel="stylesheet">
 
 <!-- Fallback -->
-<link href="/frontend/assets/styles.css" rel="stylesheet">
+<link href="/hybrid/assets/styles.css" rel="stylesheet">
 ```
 
 ## Adding New Assets
@@ -116,7 +116,7 @@ If asset versioning fails or is disabled, the template falls back to standard UR
 For common assets like CSS and JavaScript, simply place them in your assets directory:
 
 ```text
-app/frontend/
+app/hybrid/
 ├── App.html
 ├── assets/
 │   ├── styles.css    ← Automatically versioned
@@ -133,21 +133,21 @@ For additional assets, update your `App.html` template:
 {{if and .Assets (index .Assets "custom.css")}}
 <link href='{{index .Assets "custom.css"}}' rel="stylesheet">
 {{else}}
-<link href="/frontend/assets/custom.css" rel="stylesheet">
+<link href="/hybrid/assets/custom.css" rel="stylesheet">
 {{end}}
 
 <!-- Add custom JavaScript -->
 {{if and .Assets (index .Assets "custom.js")}}
 <script src='{{index .Assets "custom.js"}}'></script>
 {{else}}
-<script src="/frontend/assets/custom.js"></script>
+<script src="/hybrid/assets/custom.js"></script>
 {{end}}
 
 <!-- Add images with versioning -->
 {{if and .Assets (index .Assets "logo.png")}}
 <img src='{{index .Assets "logo.png"}}' alt="Logo">
 {{else}}
-<img src="/frontend/assets/logo.png" alt="Logo">
+<img src="/hybrid/assets/logo.png" alt="Logo">
 {{end}}
 ```
 
@@ -178,8 +178,8 @@ Assets are also available through the route data injected into `window.__ROUTE_D
 const assetMap = window.__ROUTE_DATA__.assets;
 
 // Use versioned URLs
-const logoUrl = assetMap['logo.png'] || '/frontend/assets/logo.png';
-const customCssUrl = assetMap['custom.css'] || '/frontend/assets/custom.css';
+const logoUrl = assetMap['logo.png'] || '/hybrid/assets/logo.png';
+const customCssUrl = assetMap['custom.css'] || '/hybrid/assets/custom.css';
 ```
 
 ### Dynamic Asset Loading
@@ -194,8 +194,8 @@ function getAssetUrl(assetName, fallbackPath) {
 }
 
 // Usage examples
-const dynamicStylesheet = getAssetUrl('theme.css', '/frontend/assets/theme.css');
-const dynamicScript = getAssetUrl('plugin.js', '/frontend/assets/plugin.js');
+const dynamicStylesheet = getAssetUrl('theme.css', '/hybrid/assets/theme.css');
+const dynamicScript = getAssetUrl('plugin.js', '/hybrid/assets/plugin.js');
 
 // Dynamically load CSS
 const link = document.createElement('link');
@@ -232,7 +232,7 @@ document.head.appendChild(script);
 ### Asset Organization
 
 ```text
-app/frontend/assets/
+app/hybrid/assets/
 ├── styles.css          # Main stylesheet
 ├── app.js             # Main application bundle
 ├── vendor/            # Third-party assets
@@ -291,7 +291,7 @@ debug: true
 Look for logs like:
 
 ```text
-Generated asset map: map[app.js:/frontend/assets/app.js?v=68f2ea58eb4c7770 styles.css:/frontend/assets/styles.css?v=b48d5304f1ffdd2c]
+Generated asset map: map[app.js:/hybrid/assets/app.js?v=68f2ea58eb4c7770 styles.css:/hybrid/assets/styles.css?v=b48d5304f1ffdd2c]
 ```
 
 ### Manual Testing
@@ -300,10 +300,10 @@ Test asset URLs directly:
 
 ```bash
 # Test versioned asset
-curl -I http://localhost:7890/frontend/assets/styles.css?v=b48d5304f1ffdd2c
+curl -I http://localhost:7890/hybrid/assets/styles.css?v=b48d5304f1ffdd2c
 
 # Test fallback asset
-curl -I http://localhost:7890/frontend/assets/styles.css
+curl -I http://localhost:7890/hybrid/assets/styles.css
 ```
 
 ## Security Considerations

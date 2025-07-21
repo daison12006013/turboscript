@@ -19,7 +19,7 @@ TurboScript is a unique web framework that combines TypeScript for business logi
 
 ### Prerequisites
 
-- **Go** 1.23.0 or later
+- **Go** 1.23.10 or later
 - **Node.js** 18+ and npm/yarn
 - **Docker** and Docker Compose
 - **PostgreSQL** (handled via Docker)

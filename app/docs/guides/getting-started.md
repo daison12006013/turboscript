@@ -31,7 +31,7 @@ npm install && go mod download
 docker-compose -f docker-compose.dev.yml up -d
 
 # Start the development server with hot reloading
-make dev
+make up
 ```
 
 Your API will be running at `http://localhost:7890` with hot reloading enabled!
@@ -173,7 +173,7 @@ Essential commands for daily development:
 
 ```bash
 # Start development server with hot reloading
-make dev
+make up
 
 # View application logs
 docker logs turboscript-app-dev-1 --tail=20

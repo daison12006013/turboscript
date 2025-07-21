@@ -23,7 +23,7 @@ export default [
       '*.temp',
       '.DS_Store',
       'Thumbs.db',
-      'app/frontend/assets/app.js',
+      'app/hybrid/assets/app.js',
     ],
   },
 

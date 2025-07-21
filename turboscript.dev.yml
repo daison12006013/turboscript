@@ -1,3 +1,5 @@
+version: 1
+
 # Logging Configuration
 debug: true
 info: true
@@ -180,10 +182,54 @@ jobs:
   timeout: 30 # seconds
   queue_size: 1000
   path: ./app/jobs
-  data_retention:
-    jobs_days: 15          # Number of days to keep completed, failed, or cancelled jobs
-    history_days: 15       # Number of days to keep job history entries
-    auto_cleanup: true     # Whether to automatically run cleanup
+
+# Scheduler Configuration
+# Similar to cron jobs but integrated with TurboScript's TypeScript execution environment
+scheduler:
+  enabled: true
+  timezone: "UTC"           # Default timezone for all scheduled tasks
+  path: "./app/schedulers"  # Directory containing scheduler handler files
+  log_level: "info"         # Logging level for scheduler: debug, info, warn, error
+
+  tasks:
+    # Jobs retention cleanup task - runs daily at 2 AM
+    - name: "jobs-retention-cleanup"
+      cron: "0 0 2 * * *"                  # Daily at 2:00 AM UTC (seconds, minutes, hours, day, month, weekday)
+      handler: "jobs-retention.ts"         # Relative to scheduler path
+      enabled: true
+      timezone: "UTC"
+      timeout: 300                         # 5 minutes timeout for cleanup
+      description: "Clean up old jobs and job history records based on retention policy"
+      payload:
+        cleanup_type: "all"                # Can be: jobs, history, all
+        dry_run: false                     # Set to true to see what would be deleted without actually deleting
+      environment:
+        CLEANUP_LOG_LEVEL: "info"
+
+    # Example: Daily analytics processing
+    # - name: "daily-analytics"
+    #   cron: "0 0 3 * * *"                # Daily at 3:00 AM UTC (seconds, minutes, hours, day, month, weekday)
+    #   handler: "daily-analytics.ts"
+    #   enabled: false
+    #   timezone: "UTC"
+    #   timeout: 600                       # 10 minutes timeout
+    #   description: "Process daily analytics and generate reports"
+    #   payload:
+    #     date: "yesterday"                # Special value for yesterday's date
+    #   environment:
+    #     ANALYTICS_DEBUG: "false"
+
+    # Example: Weekly report generation
+    # - name: "weekly-reports"
+    #   cron: "0 0 1 * * 1"                # Weekly on Monday at 1:00 AM UTC (seconds, minutes, hours, day, month, weekday)
+    #   handler: "weekly-reports.ts"
+    #   enabled: false
+    #   timezone: "America/New_York"       # Custom timezone
+    #   timeout: 1800                      # 30 minutes timeout
+    #   description: "Generate and email weekly reports to administrators"
+    #   payload:
+    #     report_type: "summary"
+    #     recipients: ["admin@example.com"]
 
 # Plugin Configuration
 plugins:
@@ -256,6 +302,10 @@ endpoints:
     method: GET
     path: ./app/routes/demo/*
 
+  - route: /demo/upload
+    method: POST
+    path: ./app/routes/demo/upload
+
   - route: /docs{file:(?:/.*)?}
     method: GET
     path: ./app/docs
@@ -264,9 +314,9 @@ endpoints:
       index: "index.md"
       layout: "layout.html"
 
-  - route: /frontend/*
+  - route: /hybrid/*
     method: GET
-    path: ./app/frontend
+    path: ./app/hybrid
     type: "hybrid"
     options:
       app: "App.html"
@@ -288,9 +338,9 @@ endpoints:
           - "styles.css"
           # Add more assets as needed for your project
 
-  - route: /frontend/data/settings/update
+  - route: /hybrid/data/settings/update
     method: PUT
-    path: ./app/frontend/data/settings/update
+    path: ./app/hybrid/data/settings/update
 
   # WebSocket broadcast endpoint for testing
   - route: /demo-broadcasting/websocket/broadcast

@@ -16,7 +16,7 @@ services:
       - RUNNER_GROUP=${RUNNER_GROUP:-default}
 
       # CI Environment variables
-      - GO_VERSION=1.23.0
+      - GO_VERSION=1.23.10
       - POSTGRES_VERSION=16
       - NODE_ENV=test
       - CI=true

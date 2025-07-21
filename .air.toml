@@ -8,7 +8,7 @@ tmp_dir = ".tmp"
   # Only build Go binary - frontend runs in watch mode separately
   cmd = "go build -o ./.tmp/main ."
   delay = 1000
-  exclude_dir = ["node_modules", "postman", "dist", "tmp", "vendor", "testdata", ".tmp", "cache", "app/frontend/assets"]
+  exclude_dir = ["node_modules", "postman", "dist", "tmp", "vendor", "testdata", ".tmp", "cache", "app/hybrid/assets"]
   exclude_file = ["*.log", "*_test.go"]
   exclude_regex = ["_test\\.go$"]
   exclude_unchanged = false

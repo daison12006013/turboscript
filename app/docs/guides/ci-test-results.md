@@ -251,7 +251,7 @@ Pass Rate:                      95%
 
 ## Environment Requirements
 
-- Go 1.23.0+
+- Go 1.23.10+
 - Node.js with npm
 - Docker (for integration tests)
 - PostgreSQL client

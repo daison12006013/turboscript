@@ -42,11 +42,11 @@ export function extractGlobalsFromTypeScript(projectRoot) {
             }
         }
 
-        // Extract function declarations
-        const functionMatches = content.match(/^\s*function\s+(\w+)\s*\(/gm);
+        // Extract function declarations (supporting generics)
+        const functionMatches = content.match(/^\s*function\s+(\w+)\s*(<[^>]+>)?\s*\(/gm);
         if (functionMatches) {
             for (const match of functionMatches) {
-                const name = match.match(/function\s+(\w+)\s*\(/)?.[1];
+                const name = match.match(/function\s+(\w+)\s*(?:<[^>]+>)?\s*\(/)?.[1];
                 if (name) {
                     globals[name] = 'readonly';
                 }

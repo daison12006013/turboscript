@@ -181,7 +181,7 @@ The runner environment includes:
 
 ### Pre-installed Tools
 
-- **Go 1.23.0** with module support
+- **Go 1.23.10** with module support
 - **Node.js 20 LTS** with npm
 - **Docker CLI** for container operations
 - **PostgreSQL Client** for database testing
@@ -198,7 +198,7 @@ The runner environment includes:
 ### Environment Variables
 
 ```bash
-GO_VERSION=1.23.0
+GO_VERSION=1.23.10
 POSTGRES_VERSION=16
 NODE_ENV=test
 CI=true
@@ -219,7 +219,7 @@ DOCKER_ENV=true
 │ GitHub Actions Self-Hosted Runner       │
 ├─────────────────────────────────────────┤
 │ • Ubuntu 22.04 base                    │
-│ • Go 1.23.0 + Node.js 20               │
+│ • Go 1.23.10 + Node.js 20               │
 │ • Docker-in-Docker support             │
 │ • Security scanning tools              │
 │ • Performance testing tools            │

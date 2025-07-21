@@ -330,23 +330,37 @@ func resolveEnvVariables(value string) string {
 	})
 }
 
-// JobsDataRetention represents job data retention configuration.
-type JobsDataRetention struct {
-	JobsDays    int  `yaml:"jobs_days"`    // Number of days to keep completed, failed, or cancelled jobs
-	HistoryDays int  `yaml:"history_days"` // Number of days to keep job history entries
-	AutoCleanup bool `yaml:"auto_cleanup"` // Whether to automatically run cleanup
-}
-
 // JobsConfig represents background jobs configuration.
 type JobsConfig struct {
-	Enabled            bool               `yaml:"enabled"`        // Enable background job processing
-	MaxWorkers         int                `yaml:"max_workers"`    // Maximum number of worker goroutines
-	RetryAttempts      int                `yaml:"retry_attempts"` // Number of retry attempts for failed jobs
-	RetryDelay         int                `yaml:"retry_delay"`    // Delay between retry attempts in seconds
-	Timeout            int                `yaml:"timeout"`        // Job timeout in seconds
-	QueueSize          int                `yaml:"queue_size"`     // Maximum queue size
-	PathBackgroundJobs string             `yaml:"path"`           // Path to background jobs directory
-	DataRetention      *JobsDataRetention `yaml:"data_retention"` // Job data retention configuration
+	Enabled            bool   `yaml:"enabled"`        // Enable background job processing
+	MaxWorkers         int    `yaml:"max_workers"`    // Maximum number of worker goroutines
+	RetryAttempts      int    `yaml:"retry_attempts"` // Number of retry attempts for failed jobs
+	RetryDelay         int    `yaml:"retry_delay"`    // Delay between retry attempts in seconds
+	Timeout            int    `yaml:"timeout"`        // Job timeout in seconds
+	QueueSize          int    `yaml:"queue_size"`     // Maximum queue size
+	PathBackgroundJobs string `yaml:"path"`           // Path to background jobs directory
+}
+
+// SchedulerTaskConfig represents a single scheduled task configuration.
+type SchedulerTaskConfig struct {
+	Name        string            `yaml:"name"`        // Task name (must be unique)
+	Cron        string            `yaml:"cron"`        // Cron expression (e.g., "0 2 * * *" for daily at 2 AM)
+	Handler     string            `yaml:"handler"`     // Path to TypeScript handler file
+	Enabled     bool              `yaml:"enabled"`     // Whether the task is enabled (default: true)
+	Timezone    string            `yaml:"timezone"`    // Timezone for cron execution (default: UTC)
+	Timeout     int               `yaml:"timeout"`     // Task timeout in seconds (overrides global)
+	Description string            `yaml:"description"` // Optional description for documentation
+	Payload     map[string]any    `yaml:"payload"`     // Optional static payload to pass to the handler
+	Environment map[string]string `yaml:"environment"` // Optional environment variables for this task
+}
+
+// SchedulerConfig represents the scheduler configuration.
+type SchedulerConfig struct {
+	Enabled  bool                  `yaml:"enabled"`   // Enable scheduler system (default: true)
+	Timezone string                `yaml:"timezone"`  // Default timezone for all tasks (default: UTC)
+	Path     string                `yaml:"path"`      // Path to scheduler handlers directory (default: ./app/schedulers)
+	LogLevel string                `yaml:"log_level"` // Log level: debug, info, warn, error (default: info)
+	Tasks    []SchedulerTaskConfig `yaml:"tasks"`     // List of scheduled tasks
 }
 
 // CacheDriverConfig represents a single cache driver configuration.
@@ -419,6 +433,7 @@ type Config struct {
 	Cache            CacheConfig              `yaml:"cache"`             // Cache configuration
 	Email            EmailConfig              `yaml:"email"`             // Email configuration
 	Jobs             JobsConfig               `yaml:"jobs"`              // Background jobs configuration
+	Scheduler        SchedulerConfig          `yaml:"scheduler"`         // Scheduler configuration
 	Plugins          []PluginConfig           `yaml:"plugins"`           // Plugin configurations
 	Server           ServerConfig             `yaml:"server"`            // Server configuration
 	Compression      CompressionConfig        `yaml:"compression"`       // Response compression configuration
@@ -524,6 +539,7 @@ func applyDefaultSettings(cfg *Config, originalData []byte) {
 	applyDefaultServerSettings(cfg)
 	applyDefaultCompressionSettings(cfg, originalData)
 	applyDefaultJobsSettings(cfg)
+	applyDefaultSchedulerSettings(cfg)
 	applyDefaultEmailSettings(cfg)
 	applyDefaultTypeScriptSettings(cfg)
 }
@@ -590,21 +606,41 @@ func applyDefaultJobsSettings(cfg *Config) {
 	if cfg.Jobs.QueueSize == 0 {
 		cfg.Jobs.QueueSize = 1000
 	}
+}
 
-	// Set default data retention configuration if not specified
-	if cfg.Jobs.DataRetention == nil {
-		cfg.Jobs.DataRetention = &JobsDataRetention{
-			JobsDays:    15,   // Default: 15 days retention for jobs
-			HistoryDays: 15,   // Default: 15 days retention for job history
-			AutoCleanup: true, // Default: auto cleanup enabled
+// applyDefaultSchedulerSettings sets default scheduler configuration.
+func applyDefaultSchedulerSettings(cfg *Config) {
+	// Default to enabled if not explicitly configured
+	// cfg.Scheduler.Enabled defaults to false (Go zero value), which we want to override to true
+	// Only set to true if no scheduler config was provided or if enabled wasn't explicitly set to false
+	if cfg.Scheduler.Timezone == "" {
+		cfg.Scheduler.Timezone = "UTC"
+	}
+	if cfg.Scheduler.Path == "" {
+		cfg.Scheduler.Path = "./app/schedulers"
+	}
+	if cfg.Scheduler.LogLevel == "" {
+		cfg.Scheduler.LogLevel = "info"
+	}
+
+	// Set enabled to true by default if tasks are configured or if it's not explicitly set
+	if len(cfg.Scheduler.Tasks) > 0 {
+		cfg.Scheduler.Enabled = true
+	}
+
+	// Apply defaults to individual tasks
+	for i := range cfg.Scheduler.Tasks {
+		task := &cfg.Scheduler.Tasks[i]
+		if task.Timezone == "" {
+			task.Timezone = cfg.Scheduler.Timezone
 		}
-	} else {
-		// Set default values for individual fields if not specified
-		if cfg.Jobs.DataRetention.JobsDays <= 0 {
-			cfg.Jobs.DataRetention.JobsDays = 15
+		if task.Timeout <= 0 {
+			task.Timeout = cfg.Timeout // Use global timeout
 		}
-		if cfg.Jobs.DataRetention.HistoryDays <= 0 {
-			cfg.Jobs.DataRetention.HistoryDays = 15
+		// Default enabled to true for individual tasks
+		if task.Cron != "" && task.Handler != "" {
+			// Only set enabled if cron and handler are provided
+			// Keep the YAML value if explicitly set
 		}
 	}
 }

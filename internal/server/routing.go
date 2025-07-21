@@ -140,8 +140,8 @@ func (s *Server) extractPathParams(path string, url string) map[string]string {
 	return params
 }
 
-// findMatchingEndpoint finds the endpoint that matches the request URL.
-func (s *Server) findMatchingEndpoint(requestURL string, method string) *config.EndpointConfig {
+// FindMatchingEndpoint finds the endpoint that matches the request URL.
+func (s *Server) FindMatchingEndpoint(requestURL string, method string) *config.EndpointConfig {
 	for _, ep := range s.cfg.Endpoints {
 		if ep.Method == method {
 			if matchedEp := s.matchEndpoint(ep, requestURL); matchedEp != nil {

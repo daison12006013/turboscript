@@ -15,24 +15,24 @@ export default function Layout({ children }: LayoutProps) {
     const navigation = [
         {
             name: 'Home',
-            href: '/frontend',
-            path: '/frontend',
+            href: '/hybrid',
+            path: '/hybrid',
             icon: 'home',
-            dataEndpoint: '/frontend/data'
+            dataEndpoint: '/hybrid/data'
         },
         {
             name: 'Settings',
-            href: '/frontend/settings',
-            path: '/frontend/settings',
+            href: '/hybrid/settings',
+            path: '/hybrid/settings',
             icon: 'settings',
-            dataEndpoint: '/frontend/data/settings'
+            dataEndpoint: '/hybrid/data/settings'
         },
         {
             name: 'About',
-            href: '/frontend/about',
-            path: '/frontend/about',
+            href: '/hybrid/about',
+            path: '/hybrid/about',
             icon: 'info',
-            dataEndpoint: '/frontend/data/about'
+            dataEndpoint: '/hybrid/data/about'
         },
     ];
 

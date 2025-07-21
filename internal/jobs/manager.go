@@ -32,9 +32,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
 
@@ -186,16 +184,6 @@ func (m *Manager) Start() error {
 
 	// Recover failed jobs that were being processed before server restart
 	go m.recoverFailedJobs()
-
-	// Update data retention settings from config
-	if err := m.UpdateDataRetentionPeriod(); err != nil {
-		logger.Warn("Failed to update data retention periods: %v", err)
-	}
-
-	// Setup auto-cleanup if enabled
-	if m.config.DataRetention != nil && m.config.DataRetention.AutoCleanup {
-		go m.startCleanupScheduler()
-	}
 
 	m.running = true
 	logger.Info("Job manager started successfully")
@@ -902,169 +890,4 @@ func (w *Worker) handleFailedJob(job *Job, result *JobResult, durationMs int) {
 	if err = tx.Commit(); err != nil {
 		logger.Error("Failed to commit transaction for failed job %s: %v", job.UID, err)
 	}
-}
-
-// UpdateDataRetentionPeriod updates the database settings for job data retention
-// based on the configured values in turboscript.yml.
-func (m *Manager) UpdateDataRetentionPeriod() error {
-	if !m.config.Enabled {
-		return nil
-	}
-
-	// Get retention days from config
-	jobsDays := 15      // Default retention period
-	historyDays := 15   // Default retention period
-	autoCleanup := true // Default auto cleanup setting
-
-	if m.config.DataRetention != nil {
-		if m.config.DataRetention.JobsDays > 0 {
-			jobsDays = m.config.DataRetention.JobsDays
-		}
-		if m.config.DataRetention.HistoryDays > 0 {
-			historyDays = m.config.DataRetention.HistoryDays
-		}
-		autoCleanup = m.config.DataRetention.AutoCleanup
-	}
-
-	// Update system_settings table with retention periods
-	_, err := m.db.Exec(`
-		INSERT INTO system_settings (key, value, description)
-		VALUES ('job_retention_days', $1, 'Number of days to keep completed, failed, or cancelled jobs')
-		ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP
-	`, fmt.Sprintf("%d", jobsDays))
-
-	if err != nil {
-		return fmt.Errorf("failed to update job retention period: %w", err)
-	}
-
-	_, err = m.db.Exec(`
-		INSERT INTO system_settings (key, value, description)
-		VALUES ('job_history_retention_days', $1, 'Number of days to keep job history entries')
-		ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP
-	`, fmt.Sprintf("%d", historyDays))
-
-	if err != nil {
-		return fmt.Errorf("failed to update job history retention period: %w", err)
-	}
-
-	// Also store auto_cleanup setting
-	_, err = m.db.Exec(`
-		INSERT INTO system_settings (key, value, description)
-		VALUES ('job_auto_cleanup', $1, 'Whether to automatically clean up old job data')
-		ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP
-	`, fmt.Sprintf("%t", autoCleanup))
-
-	if err != nil {
-		return fmt.Errorf("failed to update job auto cleanup setting: %w", err)
-	}
-
-	logger.Info("Updated job data retention config: jobs=%d days, history=%d days, auto_cleanup=%t",
-		jobsDays, historyDays, autoCleanup)
-	return nil
-}
-
-// getInitialCleanupDelay returns the initial cleanup delay from server config, with a default fallback.
-func (m *Manager) getInitialCleanupDelay() int {
-	if m.serverConfig != nil && m.serverConfig.InitialCleanupDelay > 0 {
-		return m.serverConfig.InitialCleanupDelay
-	}
-	return 30 // Default delay in seconds
-}
-
-// startCleanupScheduler runs a background routine to periodically clean up old job data.
-func (m *Manager) startCleanupScheduler() {
-	logger.Info("Starting job data cleanup scheduler")
-
-	// Run cleanup every 24 hours by default, but allow for configuration
-	cleanupInterval := 24 * time.Hour
-
-	// Check if a custom cleanup interval is specified in the config
-	if interval := os.Getenv("TURBOSCRIPT_JOB_CLEANUP_INTERVAL_HOURS"); interval != "" {
-		if hours, err := strconv.Atoi(interval); err == nil && hours > 0 {
-			cleanupInterval = time.Duration(hours) * time.Hour
-			logger.Info("Using custom job cleanup interval: %d hours", hours)
-		}
-	}
-
-	ticker := time.NewTicker(cleanupInterval)
-	defer ticker.Stop()
-
-	// Run an initial cleanup after a short delay to ensure the database is ready
-	initialDelay := time.Duration(m.getInitialCleanupDelay()) * time.Second
-	time.Sleep(initialDelay)
-	if err := m.runJobDataCleanup(); err != nil {
-		logger.Error("Initial job data cleanup failed: %v", err)
-	}
-
-	for {
-		select {
-		case <-m.ctx.Done():
-			logger.Debug("Job cleanup scheduler stopped")
-			return
-		case <-ticker.C:
-			if err := m.runJobDataCleanup(); err != nil {
-				logger.Error("Scheduled job data cleanup failed: %v", err)
-			} else {
-				logger.Debug("Scheduled job data cleanup completed successfully")
-			}
-		}
-	}
-}
-
-// runJobDataCleanup triggers the database cleanup functions to remove old job data.
-func (m *Manager) runJobDataCleanup() error {
-	// Get retention days from config
-	jobsDays := 15    // Default retention period
-	historyDays := 15 // Default retention period
-
-	if m.config.DataRetention != nil {
-		if m.config.DataRetention.JobsDays > 0 {
-			jobsDays = m.config.DataRetention.JobsDays
-		}
-		if m.config.DataRetention.HistoryDays > 0 {
-			historyDays = m.config.DataRetention.HistoryDays
-		}
-	}
-
-	// Get current retention periods from database
-	var dbJobsDays, dbHistoryDays int
-	err := m.db.QueryRow("SELECT COALESCE(NULLIF(value, '')::INTEGER, 15) FROM system_settings WHERE key = 'job_retention_days'").Scan(&dbJobsDays)
-	if err != nil {
-		logger.Warn("Could not get job retention period from database, using config value: %v", err)
-	}
-
-	err = m.db.QueryRow("SELECT COALESCE(NULLIF(value, '')::INTEGER, 15) FROM system_settings WHERE key = 'job_history_retention_days'").Scan(&dbHistoryDays)
-	if err != nil {
-		logger.Warn("Could not get job history retention period from database, using config value: %v", err)
-	}
-
-	// If retention periods in config differ from database, update database
-	if jobsDays != dbJobsDays || historyDays != dbHistoryDays {
-		if err := m.UpdateDataRetentionPeriod(); err != nil {
-			logger.Warn("Failed to update data retention periods: %v", err)
-		}
-	}
-
-	// Trigger the cleanup functions in the database
-	var jobsDeleted int
-	err = m.db.QueryRow("SELECT cleanup_old_jobs()").Scan(&jobsDeleted)
-	if err != nil {
-		return fmt.Errorf("failed to cleanup old jobs: %w", err)
-	}
-
-	if jobsDeleted > 0 {
-		logger.Info("Cleaned up %d old jobs", jobsDeleted)
-	}
-
-	var historyDeleted int
-	err = m.db.QueryRow("SELECT cleanup_old_job_history()").Scan(&historyDeleted)
-	if err != nil {
-		return fmt.Errorf("failed to cleanup old job history: %w", err)
-	}
-
-	if historyDeleted > 0 {
-		logger.Info("Cleaned up %d old job history entries", historyDeleted)
-	}
-
-	return nil
 }

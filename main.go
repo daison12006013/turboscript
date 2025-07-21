@@ -63,6 +63,7 @@ import (
 	"github.com/daison12006013/turboscript/internal/logger"
 	"github.com/daison12006013/turboscript/internal/performance"
 	"github.com/daison12006013/turboscript/internal/plugins"
+	"github.com/daison12006013/turboscript/internal/scheduler"
 	"github.com/daison12006013/turboscript/internal/server"
 
 	_ "github.com/lib/pq"
@@ -364,6 +365,23 @@ func startServer() {
 			logger.Info("Stopping job manager...")
 			if stopErr := jobManager.Stop(); stopErr != nil {
 				log.Printf("Failed to stop job manager: %v", stopErr)
+			}
+		}()
+	}
+
+	// Initialize scheduler manager
+	schedulerManager := scheduler.NewManager(cfg.Scheduler, defaultDB, &cfg.TypeScript)
+
+	// Start scheduler if enabled
+	if cfg.Scheduler.Enabled {
+		if err := schedulerManager.Start(); err != nil {
+			log.Printf("Failed to start scheduler: %v", err)
+			return
+		}
+		defer func() {
+			logger.Info("Stopping scheduler...")
+			if stopErr := schedulerManager.Stop(); stopErr != nil {
+				log.Printf("Failed to stop scheduler: %v", stopErr)
 			}
 		}()
 	}

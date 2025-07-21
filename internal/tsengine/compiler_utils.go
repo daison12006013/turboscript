@@ -132,14 +132,6 @@ func (c *CompilerUtils) getFormat() api.Format {
 	return api.FormatCommonJS // Default
 }
 
-// getMinify returns whether to minify JavaScript from config.
-func (c *CompilerUtils) getMinify() bool {
-	if c.config != nil {
-		return c.config.MinifyJS
-	}
-	return false // Default: no minification
-}
-
 // getSourcemap returns the sourcemap configuration from config.
 func (c *CompilerUtils) getSourcemap() api.SourceMap {
 	if c.config != nil && c.config.SourceMaps {

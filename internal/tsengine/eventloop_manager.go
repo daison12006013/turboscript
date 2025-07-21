@@ -58,7 +58,7 @@ func NewEventLoopManagerWithServer(server interface{}) *EventLoopManager {
 	registry := require.NewRegistry()
 	loop := eventloop.NewEventLoop(
 		eventloop.WithRegistry(registry),
-		eventloop.EnableConsole(true),
+		eventloop.EnableConsole(false), // Disable default console, we'll use our custom one
 	)
 
 	elm := &EventLoopManager{
@@ -773,6 +773,9 @@ func (elm *EventLoopManager) registerCryptoModule(rt *goja.Runtime, registry *re
 //
 // Returns an error if runtime setup fails.
 func (elm *EventLoopManager) setupAsyncExecution(vm *goja.Runtime, setupFn func(*goja.Runtime)) error {
+	// Register our custom console first
+	RegisterCustomConsole(vm)
+
 	// Setup function can inject additional utilities
 	if setupFn != nil {
 		setupFn(vm)

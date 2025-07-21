@@ -236,7 +236,7 @@ func (s *Server) handleHybridApp(ctx *fasthttp.RequestCtx, ep config.EndpointCon
 func (s *Server) isAPIRequest(ctx *fasthttp.RequestCtx, ep config.EndpointConfig) bool {
 	requestPath := string(ctx.Path())
 
-	// Check if this is a direct request to the data path (e.g., /frontend/data/settings)
+	// Check if this is a direct request to the data path (e.g., /hybrid/data/settings)
 	// These should always be treated as API requests
 	dataFolder := ep.GetOptionString("data", "api")
 	baseRoute := strings.TrimSuffix(ep.Route, "/*")
@@ -346,14 +346,14 @@ func (s *Server) determineDataPath(frontendPath string, ep config.EndpointConfig
 	// Get the data folder from configuration (defaults to "api")
 	dataFolder := ep.GetOptionString("data", "api")
 
-	// Get the base route pattern (e.g., "/frontend/*")
+	// Get the base route pattern (e.g., "/hybrid/*")
 	baseRoute := strings.TrimSuffix(ep.Route, "/*")
 
-	// Check if this is a direct data path request (e.g., /frontend/data/settings)
+	// Check if this is a direct data path request (e.g., /hybrid/data/settings)
 	dataPrefix := fmt.Sprintf("%s/%s/", baseRoute, dataFolder)
 	if strings.HasPrefix(frontendPath, dataPrefix) {
 		// This is a direct data request - extract the data path
-		// /frontend/data/settings -> settings
+		// /hybrid/data/settings -> settings
 		subPath := strings.TrimPrefix(frontendPath, dataPrefix)
 		if subPath == "" {
 			// Direct request to data folder - use index
@@ -365,7 +365,7 @@ func (s *Server) determineDataPath(frontendPath string, ep config.EndpointConfig
 		return filepath.Join(ep.Path, dataFolder, subPath+".ts")
 	}
 
-	// This is a regular frontend request (e.g., /frontend/settings)
+	// This is a regular frontend request (e.g., /hybrid/settings)
 	// Extract the sub-path for data lookup
 	subPath := strings.TrimPrefix(frontendPath, baseRoute)
 	if subPath == "" || subPath == "/" {
@@ -377,8 +377,8 @@ func (s *Server) determineDataPath(frontendPath string, ep config.EndpointConfig
 	subPath = strings.TrimPrefix(subPath, "/")
 
 	// Route frontend paths to their corresponding data endpoints
-	// /frontend/settings -> data/settings.ts (based on config)
-	// /frontend/about -> data/about.ts (based on config)
+	// /hybrid/settings -> data/settings.ts (based on config)
+	// /hybrid/about -> data/about.ts (based on config)
 	dataPath := filepath.Join(ep.Path, dataFolder, subPath+".ts")
 
 	// Check if the specific data file exists, otherwise use index.ts for HTML requests
@@ -629,7 +629,7 @@ func (s *Server) generateAssetMap(ep config.EndpointConfig) map[string]string {
 		logger.Debug("Checking asset: %s", assetPath)
 		if s.fileExists(assetPath) {
 			version := s.getAssetVersion(assetPath)
-			// Create versioned URL: /frontend/assets/styles.css?v=abc123def
+			// Create versioned URL: /hybrid/assets/styles.css?v=abc123def
 			baseRoute := strings.TrimSuffix(ep.Route, "/*")
 			versionedURL := fmt.Sprintf("%s/%s/%s?v=%s", baseRoute, assetsPath, asset, version)
 			assetMap[asset] = versionedURL
